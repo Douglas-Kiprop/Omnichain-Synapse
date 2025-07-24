@@ -32,6 +32,7 @@ class BaseAgent(BaseModel, ABC):
     llm: ChatBot = Field(..., description="The LLM to use for the agent")
     memory: Memory = Field(default_factory=Memory, description="The memory to use for the agent")
     state: AgentState = Field(default=AgentState.IDLE, description="The state of the agent")
+    tools: Dict[str, Any] = Field(default_factory=dict, description="Dictionary to store registered tools")
     
     max_steps: int = Field(default=10, description="The maximum number of steps the agent can take")
     current_step: int = Field(default=0, description="The current step of the agent")
@@ -273,3 +274,9 @@ class BaseAgent(BaseModel, ABC):
                 logger.info(f"Resetting agent {self.name} state from {self.state} to IDLE")
                 self.state = AgentState.IDLE
                 self.current_step = 0
+
+    def register_tool(self, tool: Any):
+        """
+        Registers a tool with the agent.
+        """
+        self.tools[tool.name] = tool

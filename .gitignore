@@ -13,5 +13,6 @@ spoon_ai_sdk.egg-info/*
 
 uv.lock
 .idea/
+spoon-env/
 
 history.txt
