@@ -9,6 +9,7 @@ import logging
 from typing import List, Optional
 from spoon_ai.tools.base import BaseTool
 from spoon_ai.tools.tool_manager import ToolManager
+from spoon_ai.tools.coingecko_tool import CoinGeckoTool  # Import custom tool
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,6 @@ def get_crypto_tools() -> List[BaseTool]:
             LpRangeCheckTool,
             SuddenPriceIncreaseTool,
             LendingRateMonitorTool,
-            
-            
         )
 
         # Import additional crypto tools
@@ -51,6 +50,7 @@ def get_crypto_tools() -> List[BaseTool]:
         # Instantiate all crypto tools
         tool_classes = [
             GetTokenPriceTool,
+            CoinGeckoTool,  # Custom tool
             Get24hStatsTool,
             GetKlineDataTool,
             PriceThresholdAlertTool,
@@ -60,7 +60,6 @@ def get_crypto_tools() -> List[BaseTool]:
             # CryptoMarketMonitor,
             PredictPrice,
             TokenHolders,
-            
             # CryptoPowerDataCEXTool,
             # CryptoPowerDataDEXTool,
             # CryptoPowerDataIndicatorsTool,
@@ -124,6 +123,7 @@ class CryptoToolsConfig:
     # Default tools to load (can be customized)
     DEFAULT_TOOLS = [
         "get_token_price",
+        "coingecko_price",  # Updated to match CoinGeckoTool name
         "get_24h_stats",
         "get_kline_data",
         "price_threshold_alert",
@@ -143,9 +143,9 @@ class CryptoToolsConfig:
     TOOLS_REQUIRING_CONFIG = [
         "lending_rate_monitor",  # May need API keys
         "predict_price",         # Requires ML dependencies
-        "token_holders",          # Requires Bitquery API key
-        "crypto_powerdata_cex", # May need API keys for private data
-        "crypto_powerdata_dex", # Requires OKX API Key
+        "token_holders",         # Requires Bitquery API key
+        "crypto_powerdata_cex",  # May need API keys for private data
+        "crypto_powerdata_dex",  # Requires OKX API Key
         "crypto_powerdata_price", # Requires OKX/CEX API Keys
     ]
 

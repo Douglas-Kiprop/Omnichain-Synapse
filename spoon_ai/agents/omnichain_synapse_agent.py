@@ -69,16 +69,16 @@ if __name__ == "__main__":
             print(f"Agent Response (NEO Price): {response_neo_price}")
 
             # Removed other queries as per user's instruction to test one query at a time.
-            # response_stats = await agent.process("Tell me the 24-hour trading volume for Bitcoin.")
-            # print(f"Agent Response (Bitcoin 24h Stats): {response_stats}")
+            response_stats = await agent.process("Tell me the 24-hour trading volume for Bitcoin.")
+            print(f"Agent Response (Bitcoin 24h Stats): {response_stats}")
 
             # response_kline = await agent.process("Get the daily kline data for BNB for the last 7 days.")
             # print(f"Agent Response (BNB Kline Data): {response_kline}")
 
             # print("\n--- Testing LLM Fallback ---")
             # # This will still fall back to the LLM if no tool is deemed necessary.
-            # response_llm = await agent.process("Explain what a blockchain is in simple terms.")
-            # print(f"Agent Response (General): {response_llm}")
+            #response_llm = await agent.process("Explain what a blockchain is in simple terms.")
+            #print(f"Agent Response (General): {response_llm}")
 
         except Exception as e:
             logger.error(f"Failed to initialize or run agent: %s", e)

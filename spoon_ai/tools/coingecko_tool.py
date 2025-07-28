@@ -1,23 +1,34 @@
 import requests
+import time
+from spoon_ai.tools.base import BaseTool, ToolResult
+import logging
+from pydantic import Field
 
-class CoinGeckoTool:
+logger = logging.getLogger(__name__)
+
+class CoinGeckoTool(BaseTool):
     """
     A tool to interact with the CoinGecko API for cryptocurrency data.
     """
+    name: str = Field(default="coingecko_price", description="The name of the tool")
+    description: str = Field(default="Get the current price of a cryptocurrency using CoinGecko API.", description="A description of the tool")
+    parameters: dict = Field(
+        default={
+            "type": "object",
+            "properties": {
+                "coin_id": {"type": "string", "description": "The ID of the coin (e.g., 'bitcoin', 'neo')"},
+                "vs_currency": {"type": "string", "description": "The currency to compare against (e.g., 'usd')", "default": "usd"}
+            },
+            "required": ["coin_id"]
+        },
+        description="Input parameters for the CoinGecko price query"
+    )
+
     def __init__(self):
-        self.name = "CoinGeckoTool" # Add this line
-        self.base_url = "https://api.coingecko.com/api/v3/"
+        super().__init__()
+        logger.info("Initializing CoinGeckoTool")
 
-    def _make_request(self, endpoint, params=None):
-        url = f"{self.base_url}{endpoint}"
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()  # Raise an exception for HTTP errors
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            return {"error": str(e)}
-
-    def get_coin_price(self, coin_id: str, vs_currency: str = "usd"):
+    async def execute(self, coin_id: str, vs_currency: str = "usd") -> ToolResult:
         """
         Retrieves the current price of a cryptocurrency.
 
@@ -26,45 +37,37 @@ class CoinGeckoTool:
             vs_currency (str): The currency to compare against (e.g., "usd", "eur").
 
         Returns:
-            dict: A dictionary containing the coin's price or an error message.
+            ToolResult: A ToolResult object containing the coin's price or an error message.
         """
-        endpoint = "simple/price"
+        logger.info(f"Fetching price for {coin_id} in {vs_currency} using CoinGecko")
+        url = "https://api.coingecko.com/api/v3/simple/price"
         params = {"ids": coin_id, "vs_currencies": vs_currency}
-        return self._make_request(endpoint, params)
-
-    def get_coin_market_chart(self, coin_id: str, vs_currency: str = "usd", days: str = "1"):
-        """
-        Retrieves historical market data for a cryptocurrency.
-
-        Args:
-            coin_id (str): The ID of the coin.
-            vs_currency (str): The currency to compare against.
-            days (str): Data granularity (e.g., "1", "7", "30", "max").
-
-        Returns:
-            dict: A dictionary containing market chart data or an error message.
-        """
-        endpoint = f"coins/{coin_id}/market_chart"
-        params = {"vs_currency": vs_currency, "days": days}
-        return self._make_request(endpoint, params)
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            if coin_id in data and vs_currency in data[coin_id]:
+                return ToolResult(
+                    output={
+                        "price": str(data[coin_id][vs_currency]),
+                        "pair": f"{coin_id.upper()}-{vs_currency.upper()}",
+                        "timestamp": int(time.time())
+                    }
+                )
+            return ToolResult(
+                error=f"No price data for {coin_id} in {vs_currency}",
+                output={"price": "0", "pair": f"{coin_id.upper()}-{vs_currency.upper()}", "timestamp": int(time.time())}
+            )
+        except requests.exceptions.RequestException as e:
+            logger.error(f"CoinGecko API error: {e}")
+            return ToolResult(error=str(e))
 
 # Example Usage (for testing purposes, remove in production)
 if __name__ == "__main__":
     try:
         coingecko_tool = CoinGeckoTool()
-
         print("Fetching Bitcoin price in USD...")
-        btc_price = coingecko_tool.get_coin_price("bitcoin")
+        btc_price = coingecko_tool.execute(coin_id="bitcoin")
         print("Bitcoin Price:", btc_price)
-
-        print("Fetching Ethereum market chart for the last 7 days...")
-        eth_chart = coingecko_tool.get_coin_market_chart("ethereum", days="7")
-        print("Ethereum Market Chart (last 7 days):")
-        # Print only a snippet to avoid large output
-        if eth_chart and 'prices' in eth_chart:
-            print(eth_chart['prices'][:5]) # Print first 5 data points
-        else:
-            print(eth_chart)
-
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
