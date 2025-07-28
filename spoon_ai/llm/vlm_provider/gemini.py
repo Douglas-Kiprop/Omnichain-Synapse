@@ -28,16 +28,19 @@ class GeminiConfig(LLMConfig):
 class GeminiProvider(LLMBase):
     """Gemini Provider Implementation"""
     
-    def __init__(self, config_path: str = "config/config.toml", config_name: str = "chitchat"):
-        """Initialize Gemini Provider
-        
-        Args:
-            config_path: Configuration file path
-            config_name: Configuration name
-        """
-        super().__init__(config_path, config_name)
+    def __init__(self, api_key: str, model_name: str = "gemini-pro", **kwargs):
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY is not set in the environment variables.")
+        # Pass the api_key and model_name to the base class constructor
+        super().__init__(api_key=api_key, model_name=model_name, llm_provider="gemini", **kwargs)
         # Initialize Gemini API client
         self.client = genai.Client(api_key=self.config.api_key)
+    
+    def _load_config(self, config_path: str = "config/config.toml", config_name: str = "chitchat") -> GeminiConfig:
+        # This method is now primarily for loading other configurations if needed,
+        # but the api_key will be directly passed during initialization.
+        # We can keep it for backward compatibility or remove if not used.
+        return super()._load_config(config_path, config_name)
     
     def _load_config(self, config_path: str, config_name: str) -> GeminiConfig:
         """Load configuration
@@ -380,4 +383,4 @@ class GeminiProvider(LLMBase):
         except Exception as e:
             error_msg = f"Gemini API request failed: {str(e)}"
             logger.error(error_msg)
-            return LLMResponse(content=f"API request failed: {str(e)}", text=f"API request failed: {str(e)}", tool_calls=[]) 
+            return LLMResponse(content=f"API request failed: {str(e)}", text=f"API request failed: {str(e)}", tool_calls=[])

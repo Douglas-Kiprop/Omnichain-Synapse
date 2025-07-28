@@ -30,21 +30,23 @@ def get_crypto_tools() -> List[BaseTool]:
             PriceThresholdAlertTool,
             LpRangeCheckTool,
             SuddenPriceIncreaseTool,
-            LendingRateMonitorTool
+            LendingRateMonitorTool,
+            
+            
         )
 
         # Import additional crypto tools
-        from spoon_toolkits.crypto.blockchain_monitor import CryptoMarketMonitor
+        # from spoon_toolkits.crypto.blockchain_monitor import CryptoMarketMonitor
         from spoon_toolkits.crypto.predict_price import PredictPrice
         from spoon_toolkits.crypto.token_holders import TokenHolders
 
         # Import crypto_powerdata tools from spoon-toolkit
-        from spoon_toolkits.crypto_powerdata import (
-            CryptoPowerDataCEXTool,
-            CryptoPowerDataDEXTool,
-            CryptoPowerDataIndicatorsTool,
-            CryptoPowerDataPriceTool,
-        )
+        # from spoon_toolkits.crypto_powerdata import (
+        #     CryptoPowerDataCEXTool,
+        #     CryptoPowerDataDEXTool,
+        #     CryptoPowerDataIndicatorsTool,
+        #     CryptoPowerDataPriceTool,
+        # )
 
         # Instantiate all crypto tools
         tool_classes = [
@@ -55,13 +57,14 @@ def get_crypto_tools() -> List[BaseTool]:
             LpRangeCheckTool,
             SuddenPriceIncreaseTool,
             LendingRateMonitorTool,
-            CryptoMarketMonitor,
+            # CryptoMarketMonitor,
             PredictPrice,
             TokenHolders,
-            CryptoPowerDataCEXTool,
-            CryptoPowerDataDEXTool,
-            CryptoPowerDataIndicatorsTool,
-            CryptoPowerDataPriceTool,
+            
+            # CryptoPowerDataCEXTool,
+            # CryptoPowerDataDEXTool,
+            # CryptoPowerDataIndicatorsTool,
+            # CryptoPowerDataPriceTool,
         ]
 
         for tool_class in tool_classes:
