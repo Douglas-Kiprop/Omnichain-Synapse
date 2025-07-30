@@ -74,12 +74,12 @@ if __name__ == "__main__":
 
             # Example: Get recent transactions for a wallet address
             # This assumes a tool like 'GetWalletTransactions' exists
-            #response_transactions = await agent.process(f"Show me the last 5 transactions for the wallet address 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6 on Ethereum.")
-            #print(f"Agent Response (Wallet Transactions): {response_transactions}")
+            response_transactions = await agent.process(f"Show me the last 5 transactions for the wallet address 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6 on Ethereum.")
+            print(f"Agent Response (Wallet Transactions): {response_transactions}")
 
             # Example: Request a general wallet overview
-            response_overview = await agent.process(f"Provide a summary of the activity for wallet 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6.")
-            print(f"Agent Response (Wallet Overview): {response_overview}")
+            #response_overview = await agent.process(f"Provide a summary of the activity for wallet 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6.")
+            #print(f"Agent Response (Wallet Overview): {response_overview}")
 
 
             # Removed other queries as per user's instruction to test one query at a time.

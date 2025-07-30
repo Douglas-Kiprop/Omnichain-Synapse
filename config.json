@@ -1,9 +1,0 @@
-{
-  "api_keys": {
-    "openai": "sk-your-openai-api-key-here",
-    "anthropic": "sk-ant-your-anthropic-api-key-here",
-    "deepseek": "your-deepseek-api-key-here"
-  },
-  "base_url": "",
-  "default_agent": "default"
-}
