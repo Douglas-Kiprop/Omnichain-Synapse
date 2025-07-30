@@ -65,12 +65,26 @@ if __name__ == "__main__":
             print("\n--- Testing Agent with Crypto Tools ---")
             # Test with a query that might trigger one of the new crypto tools
             # For example, GetTokenPriceTool or Get24hStatsTool
-            response_neo_price = await agent.process("What is the current price of NEO-USDT?")
-            print(f"Agent Response (NEO Price): {response_neo_price}")
+            #response_neo_price = await agent.process("What is the current price of NEO-USDT?")
+            #print(f"Agent Response (NEO Price): {response_neo_price}")
+
+            # Example: Get ETH balance of a wallet
+            #response_eth_balance = await agent.process(f"What is the Ethereum (ETH) balance of the wallet address 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6?")
+            #print(f"Agent Response (ETH Wallet Balance): {response_eth_balance}")
+
+            # Example: Get recent transactions for a wallet address
+            # This assumes a tool like 'GetWalletTransactions' exists
+            #response_transactions = await agent.process(f"Show me the last 5 transactions for the wallet address 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6 on Ethereum.")
+            #print(f"Agent Response (Wallet Transactions): {response_transactions}")
+
+            # Example: Request a general wallet overview
+            response_overview = await agent.process(f"Provide a summary of the activity for wallet 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6.")
+            print(f"Agent Response (Wallet Overview): {response_overview}")
+
 
             # Removed other queries as per user's instruction to test one query at a time.
-            response_stats = await agent.process("Tell me the 24-hour trading volume for Bitcoin.")
-            print(f"Agent Response (Bitcoin 24h Stats): {response_stats}")
+            #response_stats = await agent.process("Tell me the 24-hour trading volume for Bitcoin.")
+            #print(f"Agent Response (Bitcoin 24h Stats): {response_stats}")
 
             # response_kline = await agent.process("Get the daily kline data for BNB for the last 7 days.")
             # print(f"Agent Response (BNB Kline Data): {response_kline}")

@@ -32,20 +32,30 @@ def get_crypto_tools() -> List[BaseTool]:
             LpRangeCheckTool,
             SuddenPriceIncreaseTool,
             LendingRateMonitorTool,
+            
+            
         )
 
         # Import additional crypto tools
         # from spoon_toolkits.crypto.blockchain_monitor import CryptoMarketMonitor
         from spoon_toolkits.crypto.predict_price import PredictPrice
         from spoon_toolkits.crypto.token_holders import TokenHolders
-
-        # Import crypto_powerdata tools from spoon-toolkit
-        # from spoon_toolkits.crypto_powerdata import (
-        #     CryptoPowerDataCEXTool,
-        #     CryptoPowerDataDEXTool,
-        #     CryptoPowerDataIndicatorsTool,
-        #     CryptoPowerDataPriceTool,
-        # )
+        from spoon_toolkits.crypto.wallet_analysis import WalletAnalysis
+        
+        # Import Chainbase tools from chainbase_tools.py
+        from spoon_toolkits.chainbase.chainbase_tools import (
+            GetLatestBlockNumberTool,
+            GetBlockByNumberTool,
+            GetTransactionByHashTool,
+            GetAccountTransactionsTool,
+            ContractCallTool,
+            GetAccountTokensTool,
+            GetAccountNFTsTool, 
+            GetAccountBalanceTool,
+            GetTokenMetadataTool,
+         )
+                  
+        
 
         # Instantiate all crypto tools
         tool_classes = [
@@ -59,11 +69,20 @@ def get_crypto_tools() -> List[BaseTool]:
             LendingRateMonitorTool,
             # CryptoMarketMonitor,
             PredictPrice,
-            TokenHolders,
-            # CryptoPowerDataCEXTool,
-            # CryptoPowerDataDEXTool,
-            # CryptoPowerDataIndicatorsTool,
-            # CryptoPowerDataPriceTool,
+            TokenHolders,  
+            WalletAnalysis,          
+            
+
+            # Chainbase Tools (from chainbase_tools.py)
+            GetLatestBlockNumberTool,
+            GetBlockByNumberTool,
+            GetTransactionByHashTool,
+            GetAccountTransactionsTool,
+            ContractCallTool,
+            GetAccountTokensTool,
+            GetAccountNFTsTool, # EXCLUDED as per your request
+            GetAccountBalanceTool,
+            GetTokenMetadataTool,
         ]
 
         for tool_class in tool_classes:
@@ -132,11 +151,23 @@ class CryptoToolsConfig:
         "lending_rate_monitor",
         "crypto_market_monitor",
         "predict_price",
-        "token_holders",
+        "token_holders",  
+        "wallet_analysis",      
         "crypto_powerdata_cex",
         "crypto_powerdata_dex",
         "crypto_powerdata_indicators",
         "crypto_powerdata_price",
+
+        # Chainbase Tools (from chainbase_tools.py)
+        "get_latest_block_number",
+        "get_block_by_number",
+        "get_transaction_by_hash",
+        "get_transactions_by_account",
+        "contract_call",
+        "get_account_tokens",
+        "get_account_nfts", 
+        "get_account_balance",
+        "get_token_metadata",
     ]
 
     # Tools that require special configuration
@@ -144,9 +175,21 @@ class CryptoToolsConfig:
         "lending_rate_monitor",  # May need API keys
         "predict_price",         # Requires ML dependencies
         "token_holders",         # Requires Bitquery API key
+        "wallet_analysis",
         "crypto_powerdata_cex",  # May need API keys for private data
         "crypto_powerdata_dex",  # Requires OKX API Key
         "crypto_powerdata_price", # Requires OKX/CEX API Keys
+
+        # Chainbase Tools (from chainbase_tools.py)
+        "get_latest_block_number",
+        "get_block_by_number",
+        "get_transaction_by_hash",
+        "get_transactions_by_account",
+        "contract_call",
+        "get_account_tokens",
+        "get_account_nfts", 
+        "get_account_balance",
+        "get_token_metadata",
     ]
 
     @classmethod
