@@ -65,17 +65,17 @@ if __name__ == "__main__":
             print("\n--- Testing Agent with Crypto Tools ---")
             # Test with a query that might trigger one of the new crypto tools
             # For example, GetTokenPriceTool or Get24hStatsTool
-            #response_neo_price = await agent.process("What is the current price of NEO-USDT?")
-            #print(f"Agent Response (NEO Price): {response_neo_price}")
+            response_neo_price = await agent.process("What is the current price of NEO-USDT?")
+            print(f"Agent Response (NEO Price): {response_neo_price}")
 
             # Example: Get ETH balance of a wallet
-            #response_eth_balance = await agent.process(f"What is the Ethereum (ETH) balance of the wallet address 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6?")
+            #response_eth_balance = await agent.process(f"What is the Ethereum (ETH) balance of the wallet address 0xd8da6bf26964af9d7eed9e03e53415d37aa96045?")
             #print(f"Agent Response (ETH Wallet Balance): {response_eth_balance}")
 
             # Example: Get recent transactions for a wallet address
             # This assumes a tool like 'GetWalletTransactions' exists
-            response_transactions = await agent.process(f"Show me the last 5 transactions for the wallet address 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6 on Ethereum.")
-            print(f"Agent Response (Wallet Transactions): {response_transactions}")
+            #response_transactions = await agent.process(f"Show me the last 5 transactions for the wallet address 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 on Ethereum.")
+            #print(f"Agent Response (Wallet Transactions): {response_transactions}")
 
             # Example: Request a general wallet overview
             #response_overview = await agent.process(f"Provide a summary of the activity for wallet 0x3BB3974bb07FD75A1aD694Deb099376c6918D5E6.")

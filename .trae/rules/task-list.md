@@ -233,3 +233,8 @@
   - LunarCrush support: Confirm via Discord; fallback to CoinGecko.
   - SpoonOS newness: Follow wallet_tracker.py, defi_yield_analyzer.py.
 - **Success Criteria**: Agent executes strategies using provided tools, supports DeFi/sentiment use cases, UI displays real-time insights, demo aligns with dev call goals.
+
+
+
+Implement orderbooks - where have people placed their stop loss so you dont  put it there 
+

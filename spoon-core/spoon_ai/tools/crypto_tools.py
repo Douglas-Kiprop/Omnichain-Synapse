@@ -80,13 +80,14 @@ def get_crypto_tools() -> List[BaseTool]:
             GetAccountTransactionsTool,
             ContractCallTool,
             GetAccountTokensTool,
-            GetAccountNFTsTool, # EXCLUDED as per your request
+            GetAccountNFTsTool, 
             GetAccountBalanceTool,
             GetTokenMetadataTool,
         ]
 
         for tool_class in tool_classes:
             try:
+                logger.info(f"Attempting to load crypto tool: {tool_class.__name__}")
                 tool_instance = tool_class()
                 crypto_tools.append(tool_instance)
                 logger.info(f"✅ Loaded crypto tool: {tool_instance.name}")
