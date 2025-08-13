@@ -30,7 +30,7 @@ class SpoonReactAI(ToolCallAgent):
     system_prompt: str = SYSTEM_PROMPT
     next_step_prompt: str = NEXT_STEP_PROMPT
 
-    max_steps: int = 5
+    max_steps: int = 2
     tool_choice: str = "auto"
 
     avaliable_tools: ToolManager = Field(default_factory=lambda: ToolManager([]))

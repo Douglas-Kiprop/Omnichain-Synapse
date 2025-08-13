@@ -38,6 +38,9 @@ class ToolCallAgent(ReActAgent):
 
     output_queue: asyncio.Queue = Field(default_factory=asyncio.Queue)
 
+    # New field to control tool output length
+    max_tool_output_length: Optional[int] = Field(default=4000, exclude=True) # Default to 4000 characters
+
     # MCP Tools Caching
     mcp_tools_cache: Optional[List[MCPTool]] = Field(default=None, exclude=True)
     mcp_tools_cache_timestamp: Optional[float] = Field(default=None, exclude=True)
@@ -259,19 +262,32 @@ class ToolCallAgent(ReActAgent):
             args = parse_tool_arguments(tool_call.function.arguments)
             result = await self.avaliable_tools.execute(name=name, tool_input=args)
 
+            # Summarize tool output before adding to memory
+            summarized_result = self._summarize_tool_output(result)
+
             observation = (
-                f"Observed output of cmd {name} execution: {result}"
-                if result
+                f"Observed output of cmd {name} execution: {summarized_result}"
+                if summarized_result
                 else f"cmd {name} execution without any output"
             )
 
-            self._handle_special_tool(name, result)
+            self._handle_special_tool(name, summarized_result)
             return observation
 
         except Exception as e:
             print(f"❌ Tool execution error for {name}: {e}")
             raise
 
+    def _summarize_tool_output(self, output: Any) -> str:
+        """Summarizes tool output to prevent exceeding context length."""
+        if self.max_tool_output_length is None or output is None:
+            return str(output)
+
+        output_str = str(output)
+        if len(output_str) > self.max_tool_output_length:
+            # Truncate and add an ellipsis
+            return output_str[:self.max_tool_output_length] + "... (truncated)"
+        return output_str
 
     def _handle_special_tool(self, name: str, result:Any, **kwargs):
         if not self._is_special_tool(name):

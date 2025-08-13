@@ -10,7 +10,9 @@ import logging
 from spoon_ai.tools.crypto_tools import get_crypto_tools # New import
 
 # Set up logging for detailed debugging
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 # Load environment variables

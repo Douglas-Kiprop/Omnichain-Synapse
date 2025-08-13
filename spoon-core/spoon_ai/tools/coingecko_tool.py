@@ -8,66 +8,105 @@ logger = logging.getLogger(__name__)
 
 class CoinGeckoTool(BaseTool):
     """
-    A tool to interact with the CoinGecko API for cryptocurrency data.
+    A multi-purpose tool to interact with the CoinGecko API for various cryptocurrency data.
+    Supports fetching prices, contract-based prices, market data, historical data, and trending coins.
     """
     name: str = Field(default="coingecko_price", description="The name of the tool")
-    description: str = Field(default="Get the current price of a cryptocurrency using CoinGecko API.", description="A description of the tool")
+    description: str = Field(
+        default="Get cryptocurrency data from CoinGecko (price, contract price, market data, historical data, trending).",
+        description="A description of the tool"
+    )
     parameters: dict = Field(
         default={
             "type": "object",
             "properties": {
-                "coin_id": {"type": "string", "description": "The ID of the coin (e.g., 'bitcoin', 'neo')"},
-                "vs_currency": {"type": "string", "description": "The currency to compare against (e.g., 'usd')", "default": "usd"}
+                "function": {
+                    "type": "string",
+                    "description": "The type of data to fetch",
+                    "enum": [
+                        "price", "contract_price", "market_data", "historical", "trending"
+                    ],
+                    "default": "price"
+                },
+                "coin_id": {"type": "string", "description": "The ID of the coin (e.g., 'bitcoin')"},
+                "vs_currency": {"type": "string", "description": "Currency to compare against (e.g., 'usd')", "default": "usd"},
+                "contract_address": {"type": "string", "description": "Token contract address (for contract_price)"},
+                "platform_id": {"type": "string", "description": "Platform ID (e.g., 'ethereum') for contract_price"},
+                "date": {"type": "string", "description": "Date for historical data in 'dd-mm-yyyy' format"}
             },
-            "required": ["coin_id"]
+            "required": ["function"]
         },
-        description="Input parameters for the CoinGecko price query"
+        description="Parameters for CoinGecko API calls"
     )
 
     def __init__(self):
         super().__init__()
         logger.info("Initializing CoinGeckoTool")
 
-    async def execute(self, coin_id: str, vs_currency: str = "usd") -> ToolResult:
+    async def execute(self, function: str, **kwargs) -> ToolResult:
         """
-        Retrieves the current price of a cryptocurrency.
-
-        Args:
-            coin_id (str): The ID of the coin (e.g., "bitcoin", "ethereum").
-            vs_currency (str): The currency to compare against (e.g., "usd", "eur").
-
-        Returns:
-            ToolResult: A ToolResult object containing the coin's price or an error message.
+        Executes the requested CoinGecko API call based on the function parameter.
         """
-        logger.info(f"Fetching price for {coin_id} in {vs_currency} using CoinGecko")
-        url = "https://api.coingecko.com/api/v3/simple/price"
-        params = {"ids": coin_id, "vs_currencies": vs_currency}
         try:
+            base_url = "https://api.coingecko.com/api/v3"
+
+            if function == "price":
+                coin_id = kwargs.get("coin_id")
+                vs_currency = kwargs.get("vs_currency", "usd")
+                url = f"{base_url}/simple/price"
+                params = {"ids": coin_id, "vs_currencies": vs_currency}
+
+            elif function == "contract_price":
+                platform_id = kwargs.get("platform_id")
+                contract_address = kwargs.get("contract_address")
+                vs_currency = kwargs.get("vs_currency", "usd")
+                url = f"{base_url}/simple/token_price/{platform_id}"
+                params = {"contract_addresses": contract_address, "vs_currencies": vs_currency}
+
+            elif function == "market_data":
+                coin_id = kwargs.get("coin_id")
+                url = f"{base_url}/coins/{coin_id}"
+                params = {"localization": "false"}
+
+            elif function == "historical":
+                coin_id = kwargs.get("coin_id")
+                date = kwargs.get("date")
+                url = f"{base_url}/coins/{coin_id}/history"
+                params = {"date": date, "localization": "false"}
+
+            elif function == "trending":
+                url = f"{base_url}/search/trending"
+                params = {}
+
+            else:
+                return ToolResult(error=f"Unknown function '{function}'")
+
+            logger.info(f"Calling CoinGecko API: {url} with {params}")
             response = requests.get(url, params=params)
             response.raise_for_status()
             data = response.json()
-            if coin_id in data and vs_currency in data[coin_id]:
-                return ToolResult(
-                    output={
-                        "price": str(data[coin_id][vs_currency]),
-                        "pair": f"{coin_id.upper()}-{vs_currency.upper()}",
-                        "timestamp": int(time.time())
-                    }
-                )
+
             return ToolResult(
-                error=f"No price data for {coin_id} in {vs_currency}",
-                output={"price": "0", "pair": f"{coin_id.upper()}-{vs_currency.upper()}", "timestamp": int(time.time())}
+                output={
+                    "function": function,
+                    "data": data,
+                    "timestamp": int(time.time())
+                }
             )
+
         except requests.exceptions.RequestException as e:
             logger.error(f"CoinGecko API error: {e}")
             return ToolResult(error=str(e))
+        except Exception as e:
+            logger.error(f"Unexpected error in CoinGeckoTool: {e}")
+            return ToolResult(error=str(e))
 
-# Example Usage (for testing purposes, remove in production)
+
+# Example test
 if __name__ == "__main__":
-    try:
-        coingecko_tool = CoinGeckoTool()
-        print("Fetching Bitcoin price in USD...")
-        btc_price = coingecko_tool.execute(coin_id="bitcoin")
-        print("Bitcoin Price:", btc_price)
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+    tool = CoinGeckoTool()
+    import asyncio
+    async def test():
+        print(await tool.execute(function="price", coin_id="bitcoin", vs_currency="usd"))
+        print(await tool.execute(function="trending"))
+    asyncio.run(test())

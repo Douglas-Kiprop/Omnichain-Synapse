@@ -25,7 +25,7 @@ def get_crypto_tools() -> List[BaseTool]:
     try:
         # Import crypto tools from spoon-toolkit
         from spoon_toolkits.crypto import (
-            GetTokenPriceTool,
+            #GetTokenPriceTool,
             Get24hStatsTool,
             GetKlineDataTool,
             PriceThresholdAlertTool,
@@ -59,7 +59,7 @@ def get_crypto_tools() -> List[BaseTool]:
 
         # Instantiate all crypto tools
         tool_classes = [
-            GetTokenPriceTool,
+            #GetTokenPriceTool,
             CoinGeckoTool,  # Custom tool
             Get24hStatsTool,
             GetKlineDataTool,
@@ -142,7 +142,7 @@ class CryptoToolsConfig:
 
     # Default tools to load (can be customized)
     DEFAULT_TOOLS = [
-        "get_token_price",
+        #"get_token_price",
         "coingecko_price",  # Updated to match CoinGeckoTool name
         "get_24h_stats",
         "get_kline_data",
