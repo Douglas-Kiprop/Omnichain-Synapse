@@ -8,6 +8,8 @@ from typing import Optional
 import asyncio
 import logging
 from spoon_ai.tools.crypto_tools import get_crypto_tools # New import
+from spoon_ai.strategy.strategy_manager import StrategyManager # New import
+from spoon_ai.schema import Strategy # New import
 
 # Set up logging for detailed debugging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -28,6 +30,9 @@ class OmnichainSynapseAgent(SpoonReactAI):
         
         # Initialize SpoonReactAI with the LLM and register tools via its tool manager
         super().__init__(name=name, llm=llm, **kwargs)
+        
+        # Initialize StrategyManager
+        self.strategy_manager = StrategyManager()
         
         # Register tools with SpoonReactAI's tool manager
         try:
@@ -55,6 +60,82 @@ class OmnichainSynapseAgent(SpoonReactAI):
         except Exception as e:
             logger.error(f"Error during SpoonReactAI processing: {e}")
             return f"An error occurred while processing your request: {str(e)}"
+
+    async def _craft_strategy(self, strategy_data: dict) -> dict:
+        """
+        Internal method to craft and validate a strategy before saving.
+        Args:
+            strategy_data: Dictionary containing strategy parameters
+        Returns:
+            Dictionary with status and either the strategy or error message
+        """
+        try:
+            # Validate required fields
+            required_fields = ['name', 'description', 'parameters']
+            for field in required_fields:
+                if field not in strategy_data:
+                    return {"status": "error", "message": f"Missing required field: {field}"}
+
+            # Create the strategy
+            # Convert dict to Strategy object before passing to create_strategy
+            return await self.create_strategy(strategy_data)
+        except Exception as e:
+            logger.error(f"Failed to craft strategy: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def create_strategy(self, strategy_data: dict) -> dict:
+        """Creates a new strategy and stores it in Qdrant."""
+        try:
+            # Convert strategy_data dict to Strategy Pydantic model
+            strategy_obj = Strategy(**strategy_data)
+            # Call synchronous strategy_manager method without await
+            strategy = self.strategy_manager.create_strategy(strategy_obj)
+            return {"status": "success", "strategy": strategy.model_dump(mode='json')} # Use model_dump(mode='json') for proper serialization
+        except Exception as e:
+            logger.error(f"Failed to create strategy: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def get_strategy(self, strategy_id: str) -> dict:
+        """Retrieves a strategy by its ID."""
+        try:
+            # Call synchronous strategy_manager method without await
+            strategy = self.strategy_manager.get_strategy(strategy_id)
+            if strategy:
+                return {"status": "success", "strategy": strategy.model_dump(mode='json')} # Use model_dump(mode='json') for proper serialization
+            return {"status": "error", "message": f"Strategy with ID {strategy_id} not found."}
+        except Exception as e:
+            logger.error(f"Failed to get strategy: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def update_strategy(self, strategy_id: str, updates: dict) -> dict:
+        """Updates an existing strategy."""
+        try:
+            # First, get the existing strategy to update it
+            existing_strategy = self.strategy_manager.get_strategy(strategy_id)
+            if not existing_strategy:
+                return {"status": "error", "message": f"Strategy with ID {strategy_id} not found for update."}
+
+            # Update the existing strategy object with new data
+            updated_strategy_data = existing_strategy.model_dump()
+            updated_strategy_data.update(updates)
+            updated_strategy_obj = Strategy(**updated_strategy_data)
+
+            # Call synchronous strategy_manager method without await
+            strategy = self.strategy_manager.update_strategy(updated_strategy_obj)
+            return {"status": "success", "strategy": strategy.model_dump(mode='json')} # Use model_dump(mode='json') for proper serialization
+        except Exception as e:
+            logger.error(f"Failed to update strategy: {e}")
+            return {"status": "error", "message": str(e)}
+
+    async def delete_strategy(self, strategy_id: str) -> dict:
+        """Deletes a strategy by its ID."""
+        try:
+            # Call synchronous strategy_manager method without await
+            self.strategy_manager.delete_strategy(strategy_id)
+            return {"status": "success"}
+        except Exception as e:
+            logger.error(f"Failed to delete strategy: {e}")
+            return {"status": "error", "message": str(e)}
 
 # Example Usage
 if __name__ == "__main__":

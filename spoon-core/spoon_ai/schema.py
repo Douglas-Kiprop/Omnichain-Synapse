@@ -1,5 +1,7 @@
 from enum import Enum
 from typing import Any, List, Literal, Optional, Union
+from datetime import datetime
+import uuid
 
 from pydantic import BaseModel, Field
 
@@ -58,3 +60,29 @@ class LLMResponse(BaseModel):
     tool_calls: List[Any] = Field(default_factory=list)
     finish_reason: Optional[str] = Field(default=None)
     native_finish_reason: Optional[str] = Field(default=None)
+
+
+class Strategy(BaseModel):
+    """
+    Represents a data analysis strategy with conditions and actions
+    """
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str = Field(..., description="Unique name for the strategy")
+    description: Optional[str] = Field(default=None)
+    conditions: List[str] = Field(
+        ...,
+        description="List of conditions that trigger this strategy"
+    )
+    actions: List[str] = Field(
+        ...,
+        description="Actions to execute when conditions are met"
+    )
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    is_active: bool = Field(default=True)
+    owner_id: Optional[str] = Field(default=None)
+
+    class Config:
+        json_encoders = {
+            datetime: lambda v: v.isoformat()
+        }
