@@ -22,11 +22,24 @@ class QdrantClient(BaseRetrievalClient):
         host: Optional[str] = None,
     ):
         try:
-            from qdrant_client import QdrantClient as Qdrant
+            from qdrant_client import Qdrant
         except ImportError:
             raise ImportError(
                 "Qdrant client is not installed. Please install it with 'pip install qdrant-client'."
             )
+
+        # Prioritize environment variables for cloud deployment
+        qdrant_host = os.getenv("QDRANT_HOST", host)
+        qdrant_api_key = os.getenv("QDRANT_API_KEY", api_key)
+        
+        # If QDRANT_HOST is set, assume it's a cloud instance and enforce HTTPS
+        if qdrant_host and qdrant_host.startswith("https://"):
+            https = True
+            url = qdrant_host # Use the full URL if provided via env var
+            host = None # Clear host if URL is used
+            port = None # Clear port if URL is used
+        elif qdrant_host: # If host is set but not a full URL, use it as host
+            host = qdrant_host
 
         self.qdrant = Qdrant(
             location=location,
@@ -35,7 +48,7 @@ class QdrantClient(BaseRetrievalClient):
             grpc_port=grpc_port,
             prefer_grpc=prefer_grpc,
             https=https,
-            api_key=api_key,
+            api_key=qdrant_api_key,
             prefix=prefix,
             timeout=timeout,
             host=host,
