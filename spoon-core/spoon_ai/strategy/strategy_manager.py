@@ -9,13 +9,14 @@ from uuid import UUID
 from spoon_ai.schema import Strategy
 
 class StrategyManager:
-    def __init__(self, host: str = "localhost", port: int = 6333, collection_name: str = "strategies", timeout: int = 5):
-        self.client = QdrantClient(host=host, port=port, timeout=timeout)
+    def __init__(self, collection_name: str = "strategies", timeout: int = 5):
+        # QdrantClient will now pick up host and API key from environment variables (QDRANT_HOST, QDRANT_API_KEY)
+        self.client = QdrantClient(timeout=timeout)
         self.collection_name = collection_name
         self._create_collection_if_not_exists()
 
     def _create_collection_if_not_exists(self):
-        max_retries = 5
+        max_retries = 2
         base_delay = 1  # seconds
 
         for i in range(max_retries):
