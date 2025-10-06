@@ -22,6 +22,15 @@ def get_crypto_tools() -> List[BaseTool]:
     """
     crypto_tools = []
 
+    # Always add the CoinGeckoTool which is part of spoon-core
+    try:
+        coingecko_tool = CoinGeckoTool()
+        crypto_tools.append(coingecko_tool)
+        logger.info(f"✅ Loaded crypto tool: {coingecko_tool.name}")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to load CoinGeckoTool: {e}")
+
+    # Try to import tools from spoon-toolkits
     try:
         # Import crypto tools from spoon-toolkit
         from spoon_toolkits.crypto import (
@@ -32,8 +41,6 @@ def get_crypto_tools() -> List[BaseTool]:
             LpRangeCheckTool,
             SuddenPriceIncreaseTool,
             LendingRateMonitorTool,
-            
-            
         )
 
         # Import additional crypto tools
@@ -42,25 +49,9 @@ def get_crypto_tools() -> List[BaseTool]:
         from spoon_toolkits.crypto.token_holders import TokenHolders
         from spoon_toolkits.crypto.wallet_analysis import WalletAnalysis
         
-        # Import Chainbase tools from chainbase_tools.py
-        from spoon_toolkits.chainbase.chainbase_tools import (
-            GetLatestBlockNumberTool,
-            GetBlockByNumberTool,
-            GetTransactionByHashTool,
-            GetAccountTransactionsTool,
-            ContractCallTool,
-            GetAccountTokensTool,
-            GetAccountNFTsTool, 
-            GetAccountBalanceTool,
-            GetTokenMetadataTool,
-         )
-                  
-        
-
-        # Instantiate all crypto tools
+        # Instantiate crypto tools
         tool_classes = [
             #GetTokenPriceTool,
-            CoinGeckoTool,  # Custom tool
             Get24hStatsTool,
             GetKlineDataTool,
             PriceThresholdAlertTool,
@@ -71,18 +62,6 @@ def get_crypto_tools() -> List[BaseTool]:
             PredictPrice,
             TokenHolders,  
             WalletAnalysis,          
-            
-
-            # Chainbase Tools (from chainbase_tools.py)
-            GetLatestBlockNumberTool,
-            GetBlockByNumberTool,
-            GetTransactionByHashTool,
-            GetAccountTransactionsTool,
-            ContractCallTool,
-            GetAccountTokensTool,
-            GetAccountNFTsTool, 
-            GetAccountBalanceTool,
-            GetTokenMetadataTool,
         ]
 
         for tool_class in tool_classes:
@@ -95,10 +74,47 @@ def get_crypto_tools() -> List[BaseTool]:
                 logger.warning(f"⚠️ Failed to load crypto tool {tool_class.__name__}: {e}")
 
     except ImportError as e:
-        logger.error(f"❌ Failed to import crypto tools from spoon-toolkit: {e}")
-        logger.error("Make sure spoon-toolkit is installed and accessible")
-    except Exception as e:
-        logger.error(f"❌ Unexpected error loading crypto tools: {e}")
+        logger.warning(f"⚠️ Failed to import crypto tools from spoon-toolkit.crypto: {e}")
+    
+    # Try to import chainbase tools separately
+    try:
+        # Import Chainbase tools from chainbase_tools.py
+        from spoon_toolkits.chainbase.chainbase_tools import (
+            GetLatestBlockNumberTool,
+            GetBlockByNumberTool,
+            GetTransactionByHashTool,
+            GetAccountTransactionsTool,
+            ContractCallTool,
+            GetAccountTokensTool,
+            GetAccountNFTsTool, 
+            GetAccountBalanceTool,
+            GetTokenMetadataTool,
+        )
+        
+        # Chainbase Tools
+        chainbase_tool_classes = [
+            GetLatestBlockNumberTool,
+            GetBlockByNumberTool,
+            GetTransactionByHashTool,
+            GetAccountTransactionsTool,
+            ContractCallTool,
+            GetAccountTokensTool,
+            GetAccountNFTsTool, 
+            GetAccountBalanceTool,
+            GetTokenMetadataTool,
+        ]
+        
+        for tool_class in chainbase_tool_classes:
+            try:
+                logger.info(f"Attempting to load chainbase tool: {tool_class.__name__}")
+                tool_instance = tool_class()
+                crypto_tools.append(tool_instance)
+                logger.info(f"✅ Loaded chainbase tool: {tool_instance.name}")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to load chainbase tool {tool_class.__name__}: {e}")
+                
+    except ImportError as e:
+        logger.warning(f"⚠️ Failed to import chainbase tools from spoon-toolkit.chainbase: {e}")
 
     logger.info(f"🔧 Loaded {len(crypto_tools)} crypto tools successfully")
     return crypto_tools
