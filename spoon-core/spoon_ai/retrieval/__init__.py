@@ -1,7 +1,7 @@
 # Retrieval package for SpoonAI 
 from .base import BaseRetrievalClient, Document
 from .chroma import ChromaClient
-from .qdrant import QdrantClient
+from .qdrant import QdrantRetriever as QdrantClient  # Import with alias to maintain backward compatibility
 
 # Factory for retrieval client
 RETRIEVAL_CLIENTS = {

@@ -5,13 +5,27 @@ from qdrant_client.http.models import Distance, VectorParams, PointStruct
 from qdrant_client.http.exceptions import UnexpectedResponse
 from typing import List, Optional
 from uuid import UUID
+import os
 
 from spoon_ai.schema import Strategy
 
 class StrategyManager:
     def __init__(self, collection_name: str = "strategies", timeout: int = 5):
-        # QdrantClient will now pick up host and API key from environment variables (QDRANT_HOST, QDRANT_API_KEY)
-        self.client = QdrantClient(timeout=timeout)
+        # Get environment variables for Qdrant connection
+        qdrant_host = os.getenv("QDRANT_HOST")
+        qdrant_api_key = os.getenv("QDRANT_API_KEY")
+        
+        # Initialize QdrantClient with environment variables
+        if qdrant_host and qdrant_host.startswith("https://"):
+            # For cloud deployment with full URL
+            self.client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key, timeout=timeout)
+        elif qdrant_host:
+            # For custom host without full URL
+            self.client = QdrantClient(host=qdrant_host, api_key=qdrant_api_key, timeout=timeout)
+        else:
+            # Fallback to localhost
+            self.client = QdrantClient(timeout=timeout)
+            
         self.collection_name = collection_name
         self._create_collection_if_not_exists()
 

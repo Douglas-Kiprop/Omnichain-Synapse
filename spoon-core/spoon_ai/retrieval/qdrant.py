@@ -5,7 +5,7 @@ import openai
 from .base import BaseRetrievalClient, Document
 
 
-class QdrantClient(BaseRetrievalClient):
+class QdrantRetriever(BaseRetrievalClient):  # Renamed from QdrantClient to QdrantRetriever
     def __init__(
         self,
         collection_name: str = "spoon_ai",
@@ -22,7 +22,7 @@ class QdrantClient(BaseRetrievalClient):
         host: Optional[str] = None,
     ):
         try:
-            from qdrant_client import Qdrant
+            from qdrant_client import QdrantClient
         except ImportError:
             raise ImportError(
                 "Qdrant client is not installed. Please install it with 'pip install qdrant-client'."
@@ -41,7 +41,7 @@ class QdrantClient(BaseRetrievalClient):
         elif qdrant_host: # If host is set but not a full URL, use it as host
             host = qdrant_host
 
-        self.qdrant = Qdrant(
+        self.qdrant = QdrantClient(  # Use the imported QdrantClient here
             location=location,
             url=url,
             port=port,
