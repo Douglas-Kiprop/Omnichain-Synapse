@@ -24,7 +24,7 @@ app = FastAPI(
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],  # Your frontend origin
+    allow_origins=["http://localhost:8080", "https://synapse-ui.vercel.app"],  # Your frontend origins
     allow_credentials=True,
     allow_methods=["*"],  # Allows POST, OPTIONS, etc.
     allow_headers=["*"],  # Allows Content-Type, etc.

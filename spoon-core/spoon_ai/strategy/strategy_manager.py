@@ -6,6 +6,10 @@ from qdrant_client.http.exceptions import UnexpectedResponse
 from typing import List, Optional
 from uuid import UUID
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from spoon_ai.schema import Strategy
 
@@ -16,15 +20,15 @@ class StrategyManager:
         qdrant_api_key = os.getenv("QDRANT_API_KEY")
         
         # Initialize QdrantClient with environment variables
-        if qdrant_host and qdrant_host.startswith("https://"):
+        if qdrant_host and qdrant_host.startswith(("http://", "https://")):
             # For cloud deployment with full URL
             self.client = QdrantClient(url=qdrant_host, api_key=qdrant_api_key, timeout=timeout)
         elif qdrant_host:
-            # For custom host without full URL
+            # For custom host without protocol
             self.client = QdrantClient(host=qdrant_host, api_key=qdrant_api_key, timeout=timeout)
         else:
             # Fallback to localhost
-            self.client = QdrantClient(timeout=timeout)
+            self.client = QdrantClient(host="localhost", port=6333, timeout=timeout)
             
         self.collection_name = collection_name
         self._create_collection_if_not_exists()
