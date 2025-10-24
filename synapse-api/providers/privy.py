@@ -1,17 +1,17 @@
-import httpx
 import jwt
 from jwt import PyJWKClient
 from typing import Dict, Any, Optional
 from core.config import settings
 import logging
+import json
 
 logger = logging.getLogger(__name__)
-
 
 class PrivyProvider:
     def __init__(self):
         self.jwks_client = PyJWKClient(settings.PRIVY_JWKS_URL)
         self.app_id = settings.PRIVY_APP_ID
+        logger.info(f"PrivyProvider initialized with JWKS URL: {settings.PRIVY_JWKS_URL} and App ID: {self.app_id}")
     
     async def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         """
@@ -21,11 +21,15 @@ class PrivyProvider:
             # Get signing key from JWKS
             signing_key = self.jwks_client.get_signing_key_from_jwt(token)
             
+            # Decode token header to inspect algorithm
+            decoded_header = jwt.get_unverified_header(token)
+            logger.info(f"JWT Token Header: {decoded_header}")
+
             # Decode and verify token
             claims = jwt.decode(
                 token,
                 signing_key.key,
-                algorithms=["RS256"],
+                algorithms=["ES256"],
                 audience=self.app_id,
                 issuer="privy.io"
             )

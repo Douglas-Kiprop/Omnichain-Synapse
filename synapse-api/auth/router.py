@@ -68,6 +68,7 @@ async def verify_privy_token(
         )
 
 
+
 @router.get("/me", response_model=UserProfileResponse)
 async def get_current_user_profile(
     current_user: UserProfile = Depends(get_current_user)

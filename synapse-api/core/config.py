@@ -16,17 +16,18 @@ class Settings(BaseSettings):
     # Authentication - Privy
     PRIVY_APP_ID: str = ""
     PRIVY_APP_SECRET: str = ""
-    PRIVY_JWKS_URL: str = "https://auth.privy.io/.well-known/jwks.json"
+    PRIVY_JWKS_URL: str = ""
     
     # JWT Settings
     JWT_SECRET_KEY: str = "your-secret-key-change-in-production"
-    JWT_ALGORITHM: str = "HS256"
+    JWT_ALGORITHM: str = "ES256"
     JWT_EXPIRE_HOURS: int = 24
     
     # CORS
     ALLOWED_ORIGINS: List[str] = [
         "http://localhost:3000",
         "http://localhost:5173",
+        "http://localhost:8080",
         "https://your-frontend-domain.com"
     ]
     

@@ -193,3 +193,105 @@ Risk & Dependencies
 - Provider rate limits (Binance/Chainbase) — mitigate with caching, staggered jobs.
 - Data consistency across chains — normalize units and token metadata via Chainbase.
 - Render resource limits — jobs tuned for runtime tier; move heavy tasks to scheduled batches.
+
+
+
+
+AUTHENTICATION
+
+Architecture Overview
+
+Agent backend: keep spoon-core unchanged for the Synapse Agent (/chat).
+New backend: add synapse-api service focused on user auth, portfolio, analytics, strategies, market data, and signals.
+Frontend: uses Privy’s login modal and calls synapse-api for all data features; agent panel continues to call spoon-core.
+Auth Strategy (Privy-style Web2 + Web3)
+
+Identity provider: Privy as the single source of truth to unify email magic links, passkeys, OAuth (Google/Twitter), and wallet sign-in.
+Frontend login: embed Privy modal; on success the frontend gets a user token and profile (email/social handles/wallet addresses).
+Backend verification: synapse-api verifies the incoming Authorization: Bearer <privy_token> using Privy’s public keys/JWKS or verification endpoint.
+Canonical user id: use privy_user_id as the primary key; store linked identities and wallets.
+Session model: stateless JWT verification per request; optionally issue short-lived server sessions for WebSocket auth.
+Access control: lightweight RBAC (“user”, “admin”) to protect strategy and portfolio endpoints.
+Data & Storage
+
+Postgres (Render Managed) for user data:
+users (id, privy_user_id, email, display_name, created_at)
+identities (type: email/google/twitter/wallet/passkey; value; verified)
+wallets (address, chain, label, verified_via_privy)
+api_credentials (encrypted CEX keys, Chainbase key link to user)
+portfolios, positions (user holdings)
+signals, strategy_runs (for analytics and strategies)
+Qdrant remains for vectorized strategy storage (via existing StrategyManager).
+Secrets at rest: encrypt sensitive fields (CEX keys) using app-level KMS/secret and per-user salts.
+Synapse API Surface (Phase 1: Auth)
+
+POST /auth/verify:
+Body: { token: "<privy_token>" }
+Verifies token, upserts user record, returns server-side session token (optional) and normalized profile.
+GET /auth/me:
+Returns current user with linked identities and wallets.
+POST /auth/link-wallet:
+Uses Privy SDK client-side; backend records wallet meta and verifies proof from Privy.
+POST /auth/link-oauth and POST /auth/link-email:
+Upserts respective identity entries when Privy reports those methods.
+POST /auth/logout:
+Clears server session (if using server-managed session cookies).
+POST /auth/webhook (optional):
+Receives Privy webhooks for identity updates (email verified, wallet added/removed).
+Frontend Integration (Phase 1)
+
+Use Privy’s React SDK for login modal (matching your screenshot: email, Google, Twitter, other socials, wallet, passkey).
+On login success:
+Call synapse-api /auth/verify with the Privy token.
+Persist backend-issued session (cookie or localStorage token).
+Redirect to Dashboard and wire Authorization header for subsequent calls.
+Security & Compliance
+
+CORS: allow https://synapse-ui.vercel.app + localhost dev origins.
+Rate limits: basic per-IP/per-user to protect auth endpoints.
+HTTPS: Render handles TLS; cookies set Secure, HttpOnly, SameSite=Lax.
+Privacy: never log raw tokens or secrets; only last 4 chars when needed for debugging.
+Environment vars:
+PRIVY_APP_ID, PRIVY_CLIENT_ID, PRIVY_SERVER_SECRET (names depend on Privy console; we will map exact names during setup)
+POSTGRES_URL
+QDRANT_HOST, QDRANT_API_KEY
+ALLOWED_ORIGINS="https://synapse-ui.vercel.app"
+Optional feature flags: ENABLE_SERVER_SESSIONS=true
+Implementation Plan (Sequential)
+
+Phase A: Service Scaffolding
+
+Create synapse-api FastAPI app with health endpoint and CORS.
+Configure Postgres connection, migrations (Alembic).
+Add a simple User model and upsert helper.
+Phase B: Privy Verification
+
+Implement token verification via Privy JWKS/SDK.
+POST /auth/verify upserts user, returns normalized profile and optional server session.
+Add AuthDependency to guard protected routes.
+Phase C: Identity & Wallet Linking
+
+Store email/social/wallet identities from Privy post-login.
+GET /auth/me returns unified profile with identities and wallets.
+Build optional webhook handler for Privy events.
+Phase D: Observability & Hardening
+
+Structured logging for auth events.
+Basic rate limits and error shaping.
+End-to-end tests: login → /auth/verify → /auth/me.
+Phase E and beyond: Wire other panels (Portfolio, Market Data, Signals, Analytics, Strategies) once auth is solid.
+
+Non-Disruptive Deployment
+
+Deploy synapse-api as a new Render Web Service.
+Keep spoon-core unchanged; Agent continues to run /chat.
+Frontend:
+Agent panel still calls spoon-core.
+All other panels call the new synapse-api with Authorization: Bearer <token>.
+Acceptance Criteria for Auth
+
+Users can log in via email, Google, Twitter, wallet connect, and passkey using Privy modal.
+Backend verifies tokens and creates/updates a user profile.
+GET /auth/me returns consistent, normalized identities and wallets.
+Protected endpoints reject unauthenticated/invalid tokens.
+Works on local and in Render with the same flow and environment variables.

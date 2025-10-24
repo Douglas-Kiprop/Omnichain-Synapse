@@ -13,3 +13,14 @@ python "spoon_ai\agents\run_agent_server.py"
 pytest tests\test_strategy_manager.py
 
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
+
+
+
+
+
+
+SYNAPSE BACKEND
+
+.\.venv\Scripts\Activate.ps1
+
+uvicorn app:app --reload --host 0.0.0.0 --port 8000
