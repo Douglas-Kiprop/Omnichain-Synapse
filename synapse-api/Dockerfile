@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir setuptools==65.5.1 build wheel && \
-    pip install --no-cache-dir cython && \
     pip install --no-cache-dir PyYAML==5.4.1 && \
     pip install --no-cache-dir -r requirements.txt
 
