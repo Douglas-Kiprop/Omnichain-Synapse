@@ -12,7 +12,10 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir --upgrade pip setuptools build wheel && pip install --no-cache-dir cython && pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --upgrade pip setuptools build wheel && \
+    pip install --no-cache-dir cython && \
+    pip install --no-cache-dir PyYAML==5.4.1 && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
