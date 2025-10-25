@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir setuptools==65.5.1 build wheel && \
     pip install --no-cache-dir PyYAML==5.4.1 && \
+    pip install --no-cache-dir setuptools==65.5.1 build wheel && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
