@@ -1,0 +1,51 @@
+2025-10-25T22:55:29.698672438Z #10 5.247           super().run_command(command)
+2025-10-25T22:55:29.698676318Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/_distutils/dist.py", line 1021, in run_command
+2025-10-25T22:55:29.698679828Z #10 5.247           cmd_obj.run()
+2025-10-25T22:55:29.698683378Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/command/egg_info.py", line 312, in run
+2025-10-25T22:55:29.698687078Z #10 5.247           self.find_sources()
+2025-10-25T22:55:29.698690618Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/command/egg_info.py", line 320, in find_sources
+2025-10-25T22:55:29.698693969Z #10 5.247           mm.run()
+2025-10-25T22:55:29.698697349Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/command/egg_info.py", line 543, in run
+2025-10-25T22:55:29.698700909Z #10 5.247           self.add_defaults()
+2025-10-25T22:55:29.698704369Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/command/egg_info.py", line 581, in add_defaults
+2025-10-25T22:55:29.698707999Z #10 5.247           sdist.add_defaults(self)
+2025-10-25T22:55:29.698711679Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/command/sdist.py", line 109, in add_defaults
+2025-10-25T22:55:29.698715419Z #10 5.247           super().add_defaults()
+2025-10-25T22:55:29.698718859Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/_distutils/command/sdist.py", line 245, in add_defaults
+2025-10-25T22:55:29.698722109Z #10 5.247           self._add_defaults_ext()
+2025-10-25T22:55:29.698725459Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/_distutils/command/sdist.py", line 330, in _add_defaults_ext
+2025-10-25T22:55:29.698729139Z #10 5.247           self.filelist.extend(build_ext.get_source_files())
+2025-10-25T22:55:29.698732589Z #10 5.247                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-10-25T22:55:29.698743869Z #10 5.247         File "<string>", line 201, in get_source_files
+2025-10-25T22:55:29.698747469Z #10 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/_distutils/cmd.py", line 131, in __getattr__
+2025-10-25T22:55:29.698751299Z #10 5.247           raise AttributeError(attr)
+2025-10-25T22:55:29.69875467Z #10 5.247       AttributeError: cython_sources
+2025-10-25T22:55:29.69875821Z #10 5.247       [end of output]
+2025-10-25T22:55:29.69876181Z #10 5.247   
+2025-10-25T22:55:29.69876874Z #10 5.247   note: This error originates from a subprocess, and is likely not a problem with pip.
+2025-10-25T22:55:29.69877272Z #10 5.338 ERROR: Failed to build 'PyYAML' when getting requirements to build wheel
+2025-10-25T22:55:29.711208479Z #10 ERROR: process "/bin/sh -c pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir PyYAML==5.4.1 &&     pip install --no-cache-dir setuptools==65.5.1 build wheel &&     pip install --no-cache-dir -r requirements.txt" did not complete successfully: exit code: 1
+2025-10-25T22:55:29.746071749Z ------
+2025-10-25T22:55:29.746091379Z  > [5/7] RUN pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir PyYAML==5.4.1 &&     pip install --no-cache-dir setuptools==65.5.1 build wheel &&     pip install --no-cache-dir -r requirements.txt:
+2025-10-25T22:55:29.746097309Z 5.247           self.filelist.extend(build_ext.get_source_files())
+2025-10-25T22:55:29.746101429Z 5.247                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-10-25T22:55:29.746105929Z 5.247         File "<string>", line 201, in get_source_files
+2025-10-25T22:55:29.746110839Z 5.247         File "/tmp/pip-build-env-9m6bybkb/overlay/lib/python3.11/site-packages/setuptools/_distutils/cmd.py", line 131, in __getattr__
+2025-10-25T22:55:29.746115189Z 5.247           raise AttributeError(attr)
+2025-10-25T22:55:29.746119059Z 5.247       AttributeError: cython_sources
+2025-10-25T22:55:29.746123519Z 5.247       [end of output]
+2025-10-25T22:55:29.74612741Z 5.247   
+2025-10-25T22:55:29.746131799Z 5.247   note: This error originates from a subprocess, and is likely not a problem with pip.
+2025-10-25T22:55:29.746135719Z 5.338 ERROR: Failed to build 'PyYAML' when getting requirements to build wheel
+2025-10-25T22:55:29.74613965Z ------
+2025-10-25T22:55:29.74684336Z Dockerfile:15
+2025-10-25T22:55:29.746856181Z --------------------
+2025-10-25T22:55:29.746925462Z   14 |     COPY requirements.txt .
+2025-10-25T22:55:29.746931572Z   15 | >>> RUN pip install --no-cache-dir --upgrade pip && \
+2025-10-25T22:55:29.746934492Z   16 | >>>     pip install --no-cache-dir PyYAML==5.4.1 && \
+2025-10-25T22:55:29.746937932Z   17 | >>>     pip install --no-cache-dir setuptools==65.5.1 build wheel && \
+2025-10-25T22:55:29.746940872Z   18 | >>>     pip install --no-cache-dir -r requirements.txt
+2025-10-25T22:55:29.746943872Z   19 |     
+2025-10-25T22:55:29.746946812Z --------------------
+2025-10-25T22:55:29.746954092Z error: failed to solve: process "/bin/sh -c pip install --no-cache-dir --upgrade pip &&     pip install --no-cache-dir PyYAML==5.4.1 &&     pip install --no-cache-dir setuptools==65.5.1 build wheel &&     pip install --no-cache-dir -r requirements.txt" did not complete successfully: exit code: 1
+2025-10-25T22:55:29.765325371Z error: exit status 1
