@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     gcc \
     curl \
     build-essential \
-    yaml-dev \
+    libyaml-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
