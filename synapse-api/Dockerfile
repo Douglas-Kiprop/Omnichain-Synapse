@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
     libyaml-dev \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
