@@ -16,7 +16,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir "cython<3.0.0" && \
     pip install --no-cache-dir --no-build-isolation PyYAML==6.0.1 && \
     pip install --no-cache-dir build wheel && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --no-build-isolation -r requirements.txt
 
 # Copy application code
 COPY . .
