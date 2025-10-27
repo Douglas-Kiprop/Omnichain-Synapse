@@ -1,7 +1,6 @@
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings, validator
 from typing import List
 import os
-from pydantic import field_validator
 import json
 
 
@@ -40,8 +39,7 @@ class Settings(BaseSettings):
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
     
-    @field_validator("ALLOWED_ORIGINS", mode="before")
-    @classmethod
+    @validator("ALLOWED_ORIGINS", pre=True)
     def parse_allowed_origins(cls, v):
         # Accept list (already parsed), JSON string, or CSV
         if isinstance(v, list):
