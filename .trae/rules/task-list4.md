@@ -137,17 +137,68 @@ migrations/            # Alembic migration scripts
 
 ## 4. Market Data
 
-- [ ] Implement `providers/coingecko.py` for trending + quotes
-- [ ] Implement `providers/binance.py` for OHLC & quotes (REST; cache results)
-- [ ] Build `market/service.py` with caching and rate limiting
-- [ ] Build `market/router.py`:
-  - [ ] `GET /market/trending`
-  - [ ] `GET /market/ohlc?symbol=&interval=`
-  - [ ] `GET /market/quote?symbol=`
+- [ ] **Foundational Setup:**
+  - [ ] Ensure necessary external API keys (e.g., for CoinGecko if used for gainers/losers) are defined in `core/config.py` and `.env.example`.
+  - [ ] Add any new required libraries (e.g., `httpx`, `redis-py` if using Redis for caching) to `requirements.txt`.
+  - [ ] Implement `providers/coingecko.py` for trending + quotes (if not already done).
+  - [ ] Implement `providers/binance.py` for OHLC & quotes (REST; cache results) (if not already done).
+
+### 4.1 Gainers & Losers
+
+- [x] **Data Sourcing:**
+  - [x] **Decision:** Choose primary external API for 24-hour price change data (e.g., CoinGecko or Binance).
+  - [x] Integrate the chosen external API to fetch 24-hour price change data for a comprehensive list of assets.
+  - [x] Implement robust error handling and retry mechanisms within the `providers` module for external API calls.
+  - [x] Understand and document the external API's response format for gainers/losers data.
+- [x] **Data Model (`market/models.py`):
+  - [x] Define a Pydantic model `GainerLoserEntry` with fields: `symbol` (str), `price_change_24h` (float), `percentage_change_24h` (float), `current_price` (float), `timestamp` (datetime).
+- [x] **Service Logic (`market/service.py`):
+  - [x] Create a function `get_gainers_losers(limit: int = 10)` that:
+    - [x] Calls the appropriate `providers` function to fetch raw price change data.
+    - [x] Processes the data to identify top N gainers and top N losers.
+    - [ ] Implements caching for the results with a short TTL (e.g., 5-10 minutes) to optimize performance and reduce API calls.
+- [x] **API Endpoint (`market/router.py`):
+  - [x] Implement `GET /market/gainers-losers` endpoint:
+    - [x] Accepts an optional query parameter `limit` (default 10) to specify the number of gainers/losers to return.
+    - [x] Validates the `limit` parameter.
+    - [x] Returns a list of `GainerLoserEntry` objects, separated into gainers and losers.
+
+### 4.2 Volume Analysis
+
+- [x] **Data Sourcing:**
+  - [x] Utilize the existing `providers/binance.py` to fetch OHLCV (Open, High, Low, Close, Volume) data for specified symbols and time intervals.
+  - [x] Ensure efficient data retrieval and handling of historical data, considering pagination or rate limits.
+- [x] **Data Model (`market/models.py`):
+  - [x] Define a Pydantic model `VolumeAnalysisEntry` with fields: `symbol` (str), `timestamp` (datetime), `volume` (float), `quote_asset_volume` (float), `trade_count` (int, if available).
+- [x] **Service Logic (`market/service.py`):
+  - [x] Create a function `get_volume_analysis(symbol: str, interval: str, limit: int = 100)` that:
+    - [x] Calls `providers/binance.py` to fetch OHLCV data for the given `symbol` and `interval`.
+    - [x] Calculates relevant volume metrics (e.g., total volume over the period, average volume).
+    - [x] Identifies periods of unusually high or low volume based on defined criteria.
+    - [ ] Implements caching for frequently requested volume data.
+- [x] **API Endpoint (`market/router.py`):
+  - [x] Implement `GET /market/volume-analysis?symbol=&interval=&limit=` endpoint:
+    - [x] Requires `symbol` and `interval` query parameters.
+    - [x] Validates `symbol`, `interval`, and `limit` parameters.
+    - [x] Accepts an optional `limit` parameter for the number of data points.
+    - [x] Returns a list of `VolumeAnalysisEntry` objects.
+
+### 4.3 General Market Data Enhancements
+
+- [x] **Caching Strategy:**
+  - [x] Decide on the specific caching mechanism (e.g., Redis, in-memory with `functools.lru_cache`, or a dedicated caching library).
+  - [x] Refine `market/service.py` with the chosen robust caching strategy.
+- [ ] Implement comprehensive error handling and logging for all market data endpoints, ensuring consistent error responses.
+- [ ] Add rate limiting to external API calls within `providers/binance.py` and `providers/coingecko.py` to prevent abuse and stay within API limits.
+- [ ] Implement unit tests for `market/service.py` functions.
+- [ ] Implement integration tests for `market/router.py` endpoints.
 
 **Acceptance:**
-- p95 latency under 500ms using cache.
-- Clear error handling and freshness metadata.
+- [ ] `GET /market/gainers-losers` returns accurate top gainers and losers.
+- [ ] `GET /market/volume-analysis` provides relevant volume metrics for specified assets.
+- [ ] p95 latency for market data endpoints under 500ms using caching.
+- [ ] Clear error handling and freshness metadata for all market data responses.
+- [ ] All new market data features are covered by unit and integration tests.
 
 ---
 
