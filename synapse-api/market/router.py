@@ -1,5 +1,7 @@
+from typing import List, Optional
 from fastapi import APIRouter, Query
-from . import service
+from market import service
+from market.models import GainerLoserEntry, VolumeAnalysisEntry, HeatmapEntry
 
 router = APIRouter(
     prefix="/market",
@@ -26,3 +28,10 @@ async def get_volume_analysis_endpoint(
     Get volume analysis for a specific trading pair.
     """
     return await service.get_volume_analysis(symbol=symbol, interval=interval, limit=limit)
+
+@router.get("/heatmap-data", response_model=List[HeatmapEntry])
+async def get_heatmap_data_endpoint(
+    sort_by: str = Query(..., description="Sort by 'volume' or 'price_change'"),
+    limit: int = Query(20, description="Limit the number of results")
+):
+    return await service.get_heatmap_data(sort_by, limit)

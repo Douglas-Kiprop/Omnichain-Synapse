@@ -21,3 +21,13 @@ class VolumeAnalysisEntry(BaseModel):
     volume: float
     quote_asset_volume: float
     trade_count: int | None = None
+
+
+class HeatmapEntry(BaseModel):
+    id: str
+    symbol: str
+    name: str
+    image: str
+    current_price: float
+    total_volume: float
+    price_change_percentage_24h: float

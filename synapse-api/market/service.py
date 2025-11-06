@@ -1,4 +1,6 @@
-from .models import GainerLoserEntry, VolumeAnalysisEntry
+from typing import List
+from typing import List, Optional
+from .models import GainerLoserEntry, VolumeAnalysisEntry, HeatmapEntry
 from providers import coingecko, binance
 from datetime import datetime
 from . import cache
@@ -63,6 +65,39 @@ async def get_gainers_losers(limit: int = 10, timeframe: str = "24h"):
 
     await cache.set_cached_data(cache_key, result, cache.market_cache)
     return result
+
+
+async def get_heatmap_data(sort_by: str, limit: int) -> List[HeatmapEntry]:
+    market_data = await coingecko.get_market_data(timeframe="24h")
+
+    if not market_data:
+        return []
+
+    processed_data = []
+    for coin_data in market_data:
+        if coin_data.get("total_volume") is not None and coin_data.get("price_change_percentage_24h") is not None:
+            processed_data.append(coin_data)
+
+    if sort_by == "volume":
+        processed_data.sort(key=lambda x: x["total_volume"], reverse=True)
+    elif sort_by == "price_change":
+        processed_data.sort(key=lambda x: abs(x["price_change_percentage_24h"]), reverse=True)
+    else:
+        # Default sort or raise an error for unsupported sort_by
+        return []
+
+    heatmap_entries = []
+    for coin_data in processed_data[:limit]:
+        heatmap_entries.append(HeatmapEntry(
+            id=coin_data["id"],
+            symbol=coin_data["symbol"],
+            name=coin_data["name"],
+            image=coin_data["image"],
+            current_price=coin_data["current_price"],
+            total_volume=coin_data["total_volume"],
+            price_change_percentage_24h=coin_data["price_change_percentage_24h"]
+        ))
+    return heatmap_entries
 
 async def get_volume_analysis(symbol: str, interval: str, limit: int = 100):
     """
