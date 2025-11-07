@@ -73,9 +73,15 @@ async def get_heatmap_data(sort_by: str, limit: int) -> List[HeatmapEntry]:
     if not market_data:
         return []
 
+    # List of common stablecoin symbols to exclude (lowercase)
+    stablecoin_symbols = {"usdt", "usdc", "busd", "dai", "fdusd", "tusd", "usdp", "gusd", "frax", "ust", "bsc-usd", "xaut", "paxg", "mim"}
+
     processed_data = []
     for coin_data in market_data:
-        if coin_data.get("total_volume") is not None and coin_data.get("price_change_percentage_24h") is not None:
+        coin_symbol = coin_data.get("symbol")
+        if coin_symbol and coin_symbol.lower() not in stablecoin_symbols and \
+           coin_data.get("total_volume") is not None and \
+           coin_data.get("price_change_percentage_24h") is not None:
             processed_data.append(coin_data)
 
     if sort_by == "volume":
