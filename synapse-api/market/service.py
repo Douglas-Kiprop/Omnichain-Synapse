@@ -63,11 +63,16 @@ async def get_gainers_losers(limit: int = 10, timeframe: str = "24h"):
         "losers": [to_gainer_loser_entry(l) for l in losers]
     }
 
-    await cache.set_cached_data(cache_key, result, cache.market_cache)
+    await cache.set_cached_data(cache_key, result, cache.market_cache) # Cache for 5 minutes
     return result
 
 
 async def get_heatmap_data(sort_by: str, limit: int) -> List[HeatmapEntry]:
+    cache_key = cache.generate_cache_key("heatmap_data", sort_by, limit)
+    cached_data = await cache.get_cached_data(cache_key, cache.market_cache)
+    if cached_data:
+        return cached_data
+
     market_data = await coingecko.get_market_data(timeframe="24h")
 
     if not market_data:
@@ -103,6 +108,8 @@ async def get_heatmap_data(sort_by: str, limit: int) -> List[HeatmapEntry]:
             total_volume=coin_data["total_volume"],
             price_change_percentage_24h=coin_data["price_change_percentage_24h"]
         ))
+    
+    await cache.set_cached_data(cache_key, heatmap_entries, cache.market_cache, ex=300) # Cache for 5 minutes
     return heatmap_entries
 
 async def get_volume_analysis(symbol: str, interval: str, limit: int = 100):
