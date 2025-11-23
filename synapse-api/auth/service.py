@@ -95,19 +95,21 @@ class AuthService:
             "iat": datetime.utcnow(),
         }
         
+        # FIX: Force HS256 to ensure compatibility with string secret keys
         return jwt.encode(
             payload,
             settings.JWT_SECRET_KEY,
-            algorithm=settings.JWT_ALGORITHM
+            algorithm="HS256"
         )
     
     async def verify_token(self, token: str) -> Optional[UserProfile]:
         """Verify session JWT token and return user"""
         try:
+            # FIX: Force HS256 to match the generation method
             payload = jwt.decode(
                 token,
                 settings.JWT_SECRET_KEY,
-                algorithms=[settings.JWT_ALGORITHM]
+                algorithms=["HS256"]
             )
             
             privy_user_id = payload.get("privy_user_id")

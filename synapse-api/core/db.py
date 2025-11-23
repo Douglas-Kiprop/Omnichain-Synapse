@@ -1,73 +1,69 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import MetaData
 from core.config import settings
 import logging
+from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 logger = logging.getLogger(__name__)
 
-# Database engine
 engine = None
-SessionLocal = None
+AsyncSessionLocal = None
+
 
 class Base(DeclarativeBase):
     metadata = MetaData()
 
 
 async def init_db():
-    """Initialize database connection"""
-    global engine, SessionLocal
+    global engine, AsyncSessionLocal
 
     if not settings.POSTGRES_URL:
-        raise ValueError("POSTGRES_URL environment variable is required")
+        raise ValueError("POSTGRES_URL is required")
 
-    # Normalize scheme to asyncpg and strip quotes
-    db_url = settings.POSTGRES_URL.strip().strip('"').strip("'")
-    if db_url.startswith("postgres://"):
-        db_url = db_url.replace("postgres://", "postgresql+asyncpg://", 1)
-    elif db_url.startswith("postgresql://"):
-        db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    raw_url = settings.POSTGRES_URL.strip().strip('"').strip("'")
 
-    # Strip sslmode param from query
-    from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
+    # Force psycopg-binary driver
+    if raw_url.startswith("postgres://"):
+        db_url = raw_url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif raw_url.startswith("postgresql://") and "+psycopg" not in raw_url:
+        db_url = raw_url.replace("postgresql://", "postgresql+psycopg://", 1)
+    else:
+        db_url = raw_url
+
+    # Clean sslmode
     parsed = urlparse(db_url)
     q = dict(parse_qsl(parsed.query))
     q.pop("sslmode", None)
-    new_query = urlencode(q)
-    db_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
+    db_url = urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, urlencode(q), parsed.fragment))
 
     engine = create_async_engine(
         db_url,
-        echo=settings.DEBUG,
+        echo=False,
+        future=True,
+        pool_size=10,
+        max_overflow=20,
         pool_pre_ping=True,
-        pool_recycle=300,
-        connect_args={"ssl": True},  # Enable SSL for Supabase
     )
 
-    SessionLocal = async_sessionmaker(
-        engine,
+    AsyncSessionLocal = async_sessionmaker(
+        bind=engine,
         class_=AsyncSession,
-        expire_on_commit=False
+        expire_on_commit=False,
     )
 
-    logger.info("Database connection initialized")
+    logger.info("SUPABASE CONNECTED — psycopg-binary — IT WORKS ON WINDOWS")
 
 
 async def get_db() -> AsyncSession:
-    """Dependency to get database session"""
-    if SessionLocal is None:
-        raise RuntimeError("Database not initialized. Call init_db() first.")
-    
-    async with SessionLocal() as session:
-        try:
-            yield session
-        finally:
-            await session.close()
+    if AsyncSessionLocal is None:
+        raise RuntimeError("DB not initialized")
+    async with AsyncSessionLocal() as session:
+        yield session
 
 
 async def close_db():
-    """Close database connection"""
     global engine
     if engine:
         await engine.dispose()
-        logger.info("Database connection closed")
+        logger.info("DB closed")

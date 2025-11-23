@@ -5,10 +5,13 @@ from auth.service import AuthService
 from core.db import get_db
 from core.security import get_current_user
 from auth.models import UserProfile
+from core.errors import AuthenticationError # Import AuthenticationError
 import logging
+import traceback # Keep traceback imported for logger.exception usage
 
 logger = logging.getLogger(__name__)
 
+# Note: Changing this router prefix from '/' to something more specific is usually best practice
 router = APIRouter()
 
 
@@ -46,11 +49,13 @@ async def verify_privy_token(
     try:
         auth_service = AuthService(db)
         
-        # Verify Privy token and get/create user
+        # 1. Verify Privy token and retrieve/create user profile
         user = await auth_service.verify_privy_token(request.token)
         
-        # Generate session token
+        # 2. Generate session token
         session_token = auth_service.generate_session_token(user)
+        
+        logger.info(f"User login successful for user_id: {user.id}")
         
         return AuthResponse(
             user_id=str(user.id),
@@ -60,13 +65,23 @@ async def verify_privy_token(
             session_token=session_token
         )
         
-    except Exception as e:
-        logger.error(f"Token verification failed: {str(e)}")
+    except AuthenticationError as e:
+        # Handle known authentication failures (e.g., invalid or expired Privy token)
+        logger.error(f"Authentication failed: {e}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token verification failed"
+            detail="Invalid or expired token"
         )
-
+    except Exception as e:
+        # Handle unexpected errors (e.g., database connection issues, PgBouncer issues)
+        logger.exception(f"Unexpected error during user verification: {e}")
+        
+        # We don't need the specific SSL hint anymore since we fixed that in core/db.py
+        
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected server error occurred during authentication."
+        )
 
 
 @router.get("/me", response_model=UserProfileResponse)
