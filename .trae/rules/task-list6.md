@@ -228,12 +228,12 @@ This task list defines the implementation for autonomous strategy monitoring and
   - [ ] Create Alembic migration for `strategies` table.
   - [ ] Implement CRUD endpoints for strategies in `synapse-api`.
   - [ ] Update `spoon-core`'s `run_agent_server.py` to proxy strategy requests.
-- [ ] **Milestone 2: `spoon-core` Notification Integration**
-  - [ ] Integrate `TelegramClient` into `spoon_ai/monitoring/notifiers/notification.py`.
-  - [ ] Configure `spoon-core` with `TELEGRAM_BOT_TOKEN`.
-- [ ] **Milestone 3: `spoon-core` Strategy Evaluation**
+- [ ] **Milestone 2: `spoon-core` Strategy Evaluation**
   - [ ] Implement `spoon_ai/monitoring/core/strategy_evaluator.py`.
   - [ ] Ensure `spoon_ai/monitoring/clients` can fetch necessary data.
+- [ ] **Milestone 3: `spoon-core` Notification Integration**
+  - [ ] Integrate `TelegramClient` into `spoon_ai/monitoring/notifiers/notification.py`.
+  - [ ] Configure `spoon-core` with `TELEGRAM_BOT_TOKEN`.
 - [ ] **Milestone 4: `spoon-core` Monitoring Orchestration**
   - [ ] Define `MonitorStrategyTask` in `spoon_ai/monitoring/core/tasks.py`.
   - [ ] Configure `spoon_ai/monitoring/core/scheduler.py` to run the task.

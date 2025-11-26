@@ -11,6 +11,7 @@ from core.errors import add_exception_handlers
 
 from auth.router import router as auth_router
 from market.router import router as market_router
+from strategy.router import router as strategy_router
 
 
 @asynccontextmanager
@@ -51,6 +52,7 @@ async def health_check():
 # Routers
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
 app.include_router(market_router, tags=["Market Data"])
+app.include_router(strategy_router, tags=["Strategies"])
 
 
 if __name__ == "__main__":

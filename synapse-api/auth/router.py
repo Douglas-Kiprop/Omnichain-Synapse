@@ -55,6 +55,7 @@ async def verify_privy_token(
         # 2. Generate session token
         session_token = auth_service.generate_session_token(user)
         
+        logger.warning(f"[DEBUG] Session token for testing: {session_token}")
         logger.info(f"User login successful for user_id: {user.id}")
         
         return AuthResponse(

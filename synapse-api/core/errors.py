@@ -31,6 +31,17 @@ class ValidationError(SynapseAPIError):
     def __init__(self, message: str = "Validation failed"):
         super().__init__(message, 422)
 
+class ConflictError(SynapseAPIError):
+    """Resource conflict errors (e.g., duplicate unique keys)"""
+    def __init__(self, message: str = "Conflict"):
+        super().__init__(message, 409)
+
+# Add NotFoundError to support strategy service/router
+class NotFoundError(SynapseAPIError):
+    """Resource not found errors"""
+    def __init__(self, message: str = "Not found"):
+        super().__init__(message, 404)
+
 
 async def synapse_exception_handler(request: Request, exc: SynapseAPIError):
     """Handle custom Synapse API exceptions"""
