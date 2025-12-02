@@ -251,3 +251,35 @@ This task list defines the implementation for autonomous strategy monitoring and
 - **Dedicated Monitoring Service**: `spoon-core`'s `spoon_ai/monitoring` service will run as a separate, dedicated process, ensuring continuous, non-blocking monitoring.
 - **Frontend Integration**: The frontend will interact with `spoon-core`'s agent server for strategy management, which then communicates with `synapse-api`.
 - **User Instructions**: Clear instructions for users on setting up their Telegram bot and providing chat IDs will be necessary.
+
+
+
+- Implement Strict, Type-Specific Pydantic Schemas for ConditionPayload :
+
+- Action: Define a dedicated Pydantic BaseModel for each specific condition type . For example:
+  - PriceAlertPayload(BaseModel): asset: str, direction: str, target_price: float
+  - TechnicalIndicatorPayload(BaseModel): indicator: str, params: Dict[str, Any], operator: str, value: float, asset: str, timeframe: str (explicitly include timeframe here!)
+  - ...and so on for every condition.type you support.
+- Action: Modify ConditionCreate.payload to be a Union of these specific payload schemas. Use a Pydantic validator to dynamically select the correct schema based on the condition.type field.
+- Benefit: This ensures that any ConditionPayload reaching the service layer (and thus the monitoring engine) is guaranteed to conform to its expected structure and data types. The monitoring engine can then confidently work with strongly typed objects instead of generic dictionaries.
+- Enhance logic_tree Validation for Deep Structure:
+
+- Action: Create a recursive Pydantic model for LogicNode that can validate nested structures. The logic_tree field in StrategyCreateSchema should then use this LogicNode model.
+- Benefit: The monitoring engine will receive a logic_tree that is guaranteed to be structurally sound, allowing it to traverse and evaluate conditions without needing extensive defensive checks.
+- Standardize Empty String/None for Optional Fields:
+
+- Action: Decide whether "" or None is the canonical representation for "empty" for fields like description and condition.label .
+- Action: Adjust frontend behavior to send the chosen representation (e.g., null instead of "" if None is preferred).
+- Benefit: Reduces ambiguity and simplifies logic in the monitoring engine.
+- Add Format Validation for NotificationCooldown.duration :
+
+- Action: Implement a Pydantic validator in NotificationCooldown to ensure that if duration is provided as a string, it adheres to the expected "1h" or ISO 8601 format.
+- Benefit: Prevents runtime parsing errors in the monitoring engine when it tries to interpret cooldown durations.
+- Clarify and Implement required_data Population:
+
+- Action: Determine if required_data should be populated by the frontend or derived by the backend service.
+- If Frontend: Ensure the frontend sends this data based on the conditions.
+- If Backend: Implement logic in the create_user_strategy service function to analyze the conditions and logic_tree and populate required_data with the necessary data sources (e.g., "BTC-1h-RSI", "ETH-daily-price").
+- Benefit: The monitoring engine will have a clear, pre-computed list of data it needs to fetch for each strategy, optimizing its data retrieval process.
+
+By implementing these changes, you shift the burden of validation and structural guarantees to the API boundary, allowing your monitoring engine to focus purely on its core logic: fetching data, evaluating conditions, and triggering actions, all with the confidence that the input data is well-formed and unambiguous.

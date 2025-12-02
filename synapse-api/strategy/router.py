@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 from uuid import UUID
 
@@ -11,6 +12,8 @@ from auth.models import UserProfile
 from .service import StrategyService
 from .models import StrategyCreateSchema, StrategyReadSchema, StrategyStatus
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 @router.post("/strategies", response_model=StrategyReadSchema)
@@ -19,6 +22,7 @@ async def create_strategy(
     db: AsyncSession = Depends(get_db),
     current_user: UserProfile = Depends(get_current_user),
 ):
+    logger.info(f"Received strategy creation request for user {current_user.id}: {payload.json()}")
     svc = StrategyService(db)
     return await svc.create_strategy(current_user, payload)
 
