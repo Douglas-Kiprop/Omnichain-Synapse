@@ -3,7 +3,8 @@ from __future__ import annotations
 from datetime import datetime
 import enum
 import uuid
-from typing import Optional, List, Dict, Any
+import re
+from typing import Optional, List, Dict, Any, Union
 
 from sqlalchemy import (
     Column,
@@ -152,7 +153,15 @@ class NotificationEvents(BaseModel):
 
 class NotificationCooldown(BaseModel):
     enabled: bool = False
-    duration: Optional[str] = None  # ISO 8601 or "1h", "10m"
+    duration: Optional[str] = None
+
+    @validator("duration")
+    def validate_duration(cls, v):
+        if v is None or v == "":
+            return v
+        if re.fullmatch(r"^\d+(s|m|h|d|w)$", v):
+            return v
+        raise ValueError("cooldown.duration must be one of 10s/10m/1h/2d/1w")
 
 
 class NotificationPreferences(BaseModel):
@@ -162,23 +171,49 @@ class NotificationPreferences(BaseModel):
 
 
 # Condition payload examples are in "payload" field of StrategyCondition DB model.
-class ConditionPayload(BaseModel):
-    # type-specific validation should be applied at service layer
-    indicator: Optional[str] = None
-    params: Optional[Dict[str, Any]] = None
-    operator: Optional[str] = None
-    value: Optional[float] = None
-    asset: Optional[str] = None
-    direction: Optional[str] = None
-    threshold: Optional[float] = None
+# Define specific payload schemas for different condition types
+class PriceAlertPayload(BaseModel):
+    asset: str = Field(..., description="The asset symbol (e.g., 'BTC', 'ETH')")
+    direction: str = Field(..., description="Direction of price movement ('above', 'below')")
+    target_price: float = Field(..., description="The target price for the alert")
 
 
+class TechnicalIndicatorPayload(BaseModel):
+    indicator: str = Field(..., description="The technical indicator (e.g., 'rsi', 'macd', 'sma')")
+    params: Optional[Dict[str, Any]] = Field(default_factory=dict)
+    operator: str = Field(..., description="Comparison operator (e.g., 'gt', 'lt', 'cross_above', 'cross_below')")
+    value: float = Field(..., description="The value to compare the indicator against")
+    asset: str = Field(..., description="The asset symbol (e.g., 'BTC', 'ETH')")
+    timeframe: str = Field(..., description="The timeframe for the indicator (e.g., '1h', '4h', '1d')")
+
+    @validator("timeframe")
+    def validate_timeframe(cls, v):
+        allowed = {"1m","5m","15m","30m","1h","4h","12h","1d","1w"}
+        if v not in allowed:
+            raise ValueError(f"timeframe must be one of {sorted(allowed)}")
+        return v
+
+
+# Union type for all possible condition payloads
+ConditionPayload = Union[PriceAlertPayload, TechnicalIndicatorPayload]
+
+
+# Update ConditionCreate to use the Union type for payload and add a validator
 class ConditionCreate(BaseModel):
     id: Optional[uuid.UUID] = None
     type: str
-    payload: Dict[str, Any]
+    payload: ConditionPayload
     label: Optional[str] = None
     enabled: bool = True
+
+    @validator("payload", pre=True)
+    def validate_payload_by_type(cls, v, values):
+        condition_type = values.get("type")
+        if condition_type == "price_alert":
+            return PriceAlertPayload(**v)
+        elif condition_type == "technical_indicator":
+            return TechnicalIndicatorPayload(**v)
+        raise ValueError(f"Unknown condition type: {condition_type}")
 
 
 class ConditionRead(ConditionCreate):
@@ -210,11 +245,28 @@ class StrategyCreateSchema(BaseModel):
 
     @validator("logic_tree")
     def validate_logic_tree(cls, v, values):
-        # basic structural validation (deferred heavy validation to service)
-        if not isinstance(v, dict) or "operator" not in v:
-            raise ValueError("logic_tree must be a dict with an 'operator' field (AND/OR)")
-        if v.get("operator") not in {op.value for op in LogicOperator}:
-            raise ValueError("logic_tree.operator must be 'AND' or 'OR'")
+        def check(node: Any):
+            if not isinstance(node, dict):
+                raise ValueError("logic_tree nodes must be dicts")
+
+            if "ref" in node:
+                ref = node.get("ref")
+                if not isinstance(ref, str) or not ref.strip():
+                    raise ValueError("logic_tree condition ref must be a non-empty string")
+                return # Valid condition reference node
+
+            # If not a 'ref' node, it must be a group node
+            op = node.get("operator")
+            conds = node.get("conditions")
+
+            if op not in {op_enum.value for op_enum in LogicOperator}:
+                raise ValueError(f"logic_tree.operator must be one of {[op_enum.value for op_enum in LogicOperator]}")
+            if not isinstance(conds, list) or len(conds) == 0:
+                raise ValueError("logic_tree.conditions must be a non-empty list")
+
+            for child in conds:
+                check(child) # Recursively check child nodes
+        check(v)
         return v
 
 

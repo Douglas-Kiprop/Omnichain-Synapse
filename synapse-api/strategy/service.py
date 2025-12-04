@@ -31,7 +31,7 @@ class StrategyService:
                 StrategyCondition(
                     id=cid,
                     type=c.type,
-                    payload=c.payload,
+                    payload=c.payload.dict(),
                     label=c.label,
                     enabled=c.enabled,
                 )
@@ -119,7 +119,7 @@ class StrategyService:
                     id=cid,
                     strategy_id=strategy_id,
                     type=c.type,
-                    payload=c.payload,
+                    payload=c.payload.dict(),
                     label=c.label,
                     enabled=c.enabled,
                 )
