@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-dotenv
+SQLAlchemy>=2.0.0
+psycopg[binary,pool]==3.2.3
+aioredis
+aiohttp
+tenacity
+prometheus-client

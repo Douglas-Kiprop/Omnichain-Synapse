@@ -283,3 +283,62 @@ This task list defines the implementation for autonomous strategy monitoring and
 - Benefit: The monitoring engine will have a clear, pre-computed list of data it needs to fetch for each strategy, optimizing its data retrieval process.
 
 By implementing these changes, you shift the burden of validation and structural guarantees to the API boundary, allowing your monitoring engine to focus purely on its core logic: fetching data, evaluating conditions, and triggering actions, all with the confidence that the input data is well-formed and unambiguous.
+
+
+Roles
+
+- Clients
+  - Speak to external data sources (Binance, Coingecko, Uniswap) using async HTTP/WebSocket.
+  - Encapsulate each provider’s auth, endpoints, rate limits, payload shapes, and error semantics.
+  - Return raw or minimally normalized data (e.g., prices, candles, indicator inputs) with consistent types.
+- Data Prefetcher
+  - Orchestrates data requests across many strategies to minimize upstream calls.
+  - Deduplicates requests (e.g., 10 strategies needing BTC price → 1 fetch, fan-out to consumers).
+  - Performs caching (via Redis) with consistent keys and TTLs; serves cache hits fast.
+  - Normalizes outputs into a single “evaluation context” per strategy (e.g., {"prices": {...}, "klines": {...}} ).
+Relationship
+
+- The prefetcher depends on clients to retrieve fresh data when the cache doesn’t have it or is expired.
+- Clients are leaf-level providers; the prefetcher is a coordination/caching layer that decides:
+  - What to fetch (based on strategy assets and computed required_data ).
+  - Where to fetch from (primary provider, then fallback providers).
+  - When to serve cached results versus refreshing from a client.
+- Evaluators consume the prefetcher’s outputs, not the clients directly. That keeps condition logic decoupled from provider-specific quirks.
+Workflow
+
+- Scheduler tick groups strategies by frequency and computes the union of required assets/timeframes.
+- Prefetcher checks Redis for each item:
+  - Cache hit → hydrate context from Redis.
+  - Cache miss → call the appropriate client(s), normalize, write to Redis with TTL, and hydrate context.
+- ConditionEvaluator runs against that context (e.g., price_alert uses context["prices"][asset] ).
+- LogicTreeEvaluator reduces the condition results to a single boolean.
+- TriggerHandler persists logs and updates counters when the tree evaluates to true.
+Caching Strategy
+
+- Keys: use predictable, hierarchical keys (e.g., prices:{ASSET} , klines:{ASSET}:{TF} , indicators:{ASSET}:{IND}:{TF} ).
+- TTLs: align with schedule (shorter TTL for fast schedules like 1m ; longer TTL for 1h ).
+- Invalidation: refresh on demand for critical paths (manual reload, upstream webhook, or when TTL elapses).
+- Serialization: store compact, parseable values; avoid large snapshots in Redis.
+Error Handling & Resilience
+
+- Clients: implement retries (with jitter), exponential backoff, provider-specific error parsing, and rate-limit handling.
+- Prefetcher: fall back across providers (primary → secondary → tertiary), and return partial contexts where possible.
+- Observability: record metrics for cache hits/misses, fetch latency, provider errors, and batch durations.
+Extending Each
+
+- Clients
+  - Add async implementations for Binance/Coingecko/Uniswap with a shared base.py interface ( get_price , get_klines , etc.).
+  - Normalize output schemas (e.g., number types, timezones, symbol normalization).
+  - Add per-provider rate-limiters and credential management.
+- Data Prefetcher
+  - Implement batch calls per provider, symbol remapping, and multi-asset requests.
+  - Add a registry for “data requirements” (e.g., price, kline, indicator inputs) inferred from strategies.
+  - Enrich cached data with timestamps/source metadata for traceability.
+Scheduler Auto-Start
+
+- Yes—enable auto-start at app startup behind a config flag (e.g., ENABLE_SCHEDULER=true ).
+- Correct implementation
+  - On startup: construct the scheduler; use short-lived DB sessions per tick (not one long-lived session).
+  - On shutdown: stop the scheduler task cleanly; close DB/Redis connections.
+  - Guardrails: catch exceptions per tick, don’t let one provider failure halt the loop, and mark problematic strategies error when evaluation is impossible.
+  - Metrics/logging: instrument ticks, batch durations, triggers, cache hit rate, and errors for visibility.
