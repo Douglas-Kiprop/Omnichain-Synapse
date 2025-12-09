@@ -121,6 +121,20 @@ class ConditionEvaluator:
     def _close_series(self, klines: List[Dict[str, Any]]) -> List[float]:
         return [float(k["close"]) for k in klines if "close" in k]
 
+    def _volume_series(self, klines: List[Dict[str, Any]]) -> List[float]:
+        vals: List[float] = []
+        for k in klines:
+            v = k.get("volume")
+            if v is None:
+                v = k.get("vol") or k.get("quote_volume") or k.get("quoteVolume")
+            if v is None:
+                continue
+            try:
+                vals.append(float(v))
+            except Exception:
+                continue
+        return vals
+
     def _compare(self, lhs: Optional[float], op: str, rhs: float) -> bool:
         if lhs is None:
             return False
@@ -200,6 +214,8 @@ class ConditionEvaluator:
             elif indicator == "bollinger":
                 period = int(params.get("period", 20))
                 needed_limit = period
+            elif indicator == "volume":
+                needed_limit = 2 if op.startswith("cross_") else 1
             else:
                 return ConditionResult(met=False, value=None, details={"unknown_indicator": indicator})
             kl = await self._ensure_klines(ctx, asset, interval, needed_limit, currency)
@@ -257,6 +273,11 @@ class ConditionEvaluator:
                             prev_val = bb_prev[2]
                         else:
                             prev_val = bb_prev[0]
+            elif indicator == "volume":
+                vols = self._volume_series(kl)
+                val = vols[-1] if vols else None
+                if op.startswith("cross_"):
+                    prev_val = vols[-2] if len(vols) >= 2 else None
             if op in {"gt", "ge", "lt", "le", "eq"}:
                 met = self._compare(val, op, float(rhs))
             elif op in {"cross_above", "cross_below"}:

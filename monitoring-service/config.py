@@ -13,6 +13,7 @@ class Settings:
         self.MONITORING_PORT = int(os.getenv("MONITORING_PORT", "9000"))
         self.ENABLE_WEBSOCKETS = os.getenv("ENABLE_WEBSOCKETS", "false").lower() == "true"
         self.ENABLE_SCHEDULER = os.getenv("ENABLE_SCHEDULER", "false").lower() == "true"
+        self.SCHEDULER_INTERVAL_SECONDS = int(os.getenv("SCHEDULER_INTERVAL_SECONDS", "5"))
         self.MONITORING_API_KEY = os.getenv("MONITORING_API_KEY")
 
 @lru_cache

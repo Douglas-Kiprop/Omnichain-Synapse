@@ -43,11 +43,14 @@ class DataPrefetcher:
             key = f"prices:{a}"
             val: Optional[float] = None
             if redis:
+                logger.debug(f"Checking cache for {key}")
                 raw = await redis.get(key)
                 if raw is not None:
                     try:
                         val = float(raw)
+                        logger.debug(f"Cache hit for {key}: {val}")
                     except Exception:
+                        logger.warning(f"Cached value for {key} is not a float")
                         val = None
             if val is None:
                 fetched = await self.fetch_price(a, currency)
@@ -55,6 +58,9 @@ class DataPrefetcher:
                     val = fetched
                     if redis:
                         await redis.setex(key, ttl_seconds, str(fetched))
+                        logger.debug(f"Caching price for {key} with TTL {ttl_seconds}")
+                else:
+                    logger.debug(f"No price fetched for {a}")
             result[a] = val
         return result
 

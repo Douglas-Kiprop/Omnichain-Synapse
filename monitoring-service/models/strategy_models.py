@@ -199,8 +199,22 @@ class TechnicalIndicatorPayload(BaseModel):
         return v
 
 
+class VolumeAlertPayload(BaseModel):
+    asset: str = Field(...)
+    timeframe: str = Field(...)
+    operator: str = Field(...)
+    threshold: float = Field(...)
+
+    @validator("timeframe")
+    def validate_timeframe(cls, v):
+        allowed = {"1m","5m","15m","30m","1h","4h","12h","1d","1w"}
+        if v not in allowed:
+            raise ValueError(f"timeframe must be one of {sorted(allowed)}")
+        return v
+
+
 # Union type for all possible condition payloads
-ConditionPayload = Union[PriceAlertPayload, TechnicalIndicatorPayload]
+ConditionPayload = Union[PriceAlertPayload, VolumeAlertPayload, TechnicalIndicatorPayload]
 
 
 # Update ConditionCreate to use the Union type for payload and add a validator
@@ -216,6 +230,8 @@ class ConditionCreate(BaseModel):
         condition_type = values.get("type")
         if condition_type == "price_alert":
             return PriceAlertPayload(**v)
+        elif condition_type == "volume_alert":
+            return VolumeAlertPayload(**v)
         elif condition_type == "technical_indicator":
             return TechnicalIndicatorPayload(**v)
         raise ValueError(f"Unknown condition type: {condition_type}")

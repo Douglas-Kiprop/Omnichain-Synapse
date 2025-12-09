@@ -342,3 +342,143 @@ Scheduler Auto-Start
   - On shutdown: stop the scheduler task cleanly; close DB/Redis connections.
   - Guardrails: catch exceptions per tick, don’t let one provider failure halt the loop, and mark problematic strategies error when evaluation is impossible.
   - Metrics/logging: instrument ticks, batch durations, triggers, cache hit rate, and errors for visibility.
+
+
+  Goal
+
+Design and implement robust evaluators that can handle complex strategies accurately and efficiently: a Condition Evaluator for atomic predicates and a Logic Tree Evaluator for compositional logic with short-circuiting, batching, and caching.
+
+High-Level Design
+
+Condition Evaluator: Resolves atomic conditions (price alerts, indicators, crossovers, percent changes, volume spikes, time filters) against shared, cached market data from DataPrefetcher.
+Logic Tree Evaluator: Resolves strategy logic graphs (AND/OR/NOT/K-of-N) on top of condition results, with short-circuiting, memoization, and deterministic evaluation semantics.
+Execution Planner: Pre-compiles strategy requirements into a batched plan (grouped by asset + interval + window) to minimize upstream calls and indicator recomputation.
+Evaluation Context: Centralized caches for prices, klines, indicators, and previous evaluation state to make runs incremental and fast.
+Data & Schema Assumptions
+
+Strategies reference a list of typed conditions and a logic tree describing how to combine them.
+Common condition kinds:
+price_alert: asset, currency, op (>, >=, <, <=, ==), threshold
+technical_indicator: asset, interval, indicator (e.g., rsi, sma, ema, macd), params, op, rhs
+crossover: asset, interval, lhs_indicator, rhs_indicator, params
+percent_change: asset, interval, window, op, threshold
+volume_spike: asset, interval, window, multiplier
+time_filter: cron or window constraints
+Logic tree nodes:
+COND: references a condition id
+AND, OR, NOT
+K_OF_N: required_count with children
+Status/cooldown handled at trigger time, but time-aware conditions supported.
+Condition Evaluator
+
+Registry pattern: map condition.type to a handler implementing evaluate(condition, ctx) -> ConditionResult.
+Context (ctx) includes:
+prefetcher: shared DataPrefetcher
+price_cache: Dict[key, float]
+klines_cache: Dict[key, List[candle]]
+indicator_cache: Dict[key, Any] keyed by asset:interval:indicator:params
+now: evaluation timestamp
+prior_state: last-known values for incremental checks (e.g., previous crossover state)
+Batching:
+Pre-scan all conditions across strategies to build RequiredData sets:
+Prices: prices:{asset}
+Klines: klines:{asset}:{interval}:{limit}:{currency}
+Indicators: derived from klines keys
+Fetch once per unique key using prefetcher.get_prices and prefetcher.get_klines.
+Indicator engine:
+Default pure-Python implementations for RSI, SMA/EMA, MACD, Bollinger, percent change, min/max, ATR.
+Pluggable backends: if numpy is present, use vectorized path; otherwise fallback to pure-Python. Never hard-require external libs.
+Strict windowing: compute only final value needed for comparison to avoid full-series work when possible.
+Determinism:
+Normalize currency mapping consistently (usd → USDT when using Binance klines).
+Use uniform rounding and null handling; comparisons only proceed on valid floats.
+Define candle alignment: last closed candle vs. in-progress; default to last closed for stability.
+
+
+Execution Planner
+
+- Pre-step before evaluation:
+  - Walk all strategies to collect RequiredData keys.
+  - Group keys by asset and interval ; compute minimal limit that satisfies all condition windows.
+  - Single get_prices call per unique currency set and asset list.
+  - Single get_klines call per unique (asset, interval, limit, currency) tuple.
+- Pre-compute indicators:
+  - For each (asset, interval) group, compute all requested indicators sharing the same klines once.
+  - Cache in ctx.indicator_cache .
+- Deliver a compiled plan that the scheduler can reuse across runs until dependencies change.
+Performance Tactics
+
+- Batch and cache:
+  - Share data across strategies; ensure >95% cache hit rate in DataPrefetcher .
+  - Use TTLs appropriate to intervals; e.g., 1m klines TTL ~60s, 1h TTL ~3600s.
+- Incremental evaluation:
+  - Maintain prior outputs by strategy to avoid re-computing expensive crossovers when klines unchanged.
+- Concurrency:
+  - Use asyncio.gather for external fetches; cap concurrency with semaphores to avoid API rate limits.
+- Avoid overfetch:
+  - Compute minimal limit per indicator (e.g., rsi(period=14) needs 14–20 candles, not 1000).
+- Numerical stability:
+  - Use stable EMA implementation; consistent precision.
+  - Treat NaNs/missing as non-met unless condition explicitly allows grace.
+Accuracy & Semantics
+
+- Price source priority:
+  - Prefer Binance for spot accuracy; fallback to CoinGecko when Binance fails.
+- Candle semantics:
+  - Evaluate on last closed candle by default; configurable to include live candle.
+- Time filters:
+  - Apply schedule windows before condition resolution to skip non-actionable periods.
+- Crossovers:
+  - Detect crossing between previous and current points, not just > vs < .
+- Percent change:
+  - Compute relative change against start of window; guard against zero baseline.
+Error Handling
+
+- Defensive inputs:
+  - Validate condition fields; return non-met with reasons on invalid config.
+- External errors:
+  - If upstream fetch fails, attempt fallback; mark condition non-met with source_unavailable .
+- Data gaps:
+  - If klines shorter than required window, non-met with insufficient_data .
+- Timeouts:
+  - Apply per-fetch timeouts and aggregate deadline per batch.
+Metrics & Observability
+
+- Key metrics:
+  - evaluation_latency_ms per strategy
+  - cache_hit_rate
+  - api_calls_count per provider
+  - indicator_compute_ms
+  - conditions_met_count , triggers_emitted_count
+- Structured logs:
+  - Strategy id, batch id, assets involved, providers used, fallback events.
+Testing Strategy
+
+- Unit tests:
+  - Deterministic indicator outputs for small synthetic series
+  - Price alert comparisons with edge thresholds
+  - Crossovers, percent change, volume spike scenarios
+  - Logic tree short-circuit behavior and K-of-N correctness
+- Integration tests:
+  - Batch plan generation with multiple strategies sharing assets/intervals
+  - Prefetcher cache hits across runs
+- Property tests:
+  - Invariants for indicators (e.g., RSI in [0, 100]) under random series
+- Performance tests:
+  - 100+ strategies grouped into 10 batches; ensure <500ms per batch
+Concrete Next Steps
+
+- Create core/condition_evaluator.py :
+  - Define ConditionHandler base, ConditionRegistry , and handlers for:
+    - price_alert
+    - technical_indicator (RSI, SMA/EMA, MACD, Bollinger)
+    - crossover
+    - percent_change
+    - volume_spike
+    - time_filter
+  - Implement EvaluationContext and indicator functions with pure-Python baseline.
+- Create core/logic_tree_evaluator.py :
+  - Implement LogicTreeEvaluator with short-circuiting, memoization, and K-of-N support.
+- Wire into scheduler:
+  - Build an ExecutionPlanner that groups requirements, fetches via DataPrefetcher , populates EvaluationContext , then invokes evaluators.
+- Add tests under tests/unit for each evaluator and combined logic resolution.

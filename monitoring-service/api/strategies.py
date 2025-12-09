@@ -5,7 +5,7 @@ from db.session import get_db
 from models.strategy_models import Strategy, StrategyTriggerLog
 from config import Settings
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Literal
 import uuid
 from core.strategy_loader import StrategyLoader
 from models.strategy_models import StrategyStatus
@@ -23,13 +23,17 @@ async def require_api_key(x_monitoring_key: str = Header(None, alias="X-Monitori
     if not settings.MONITORING_API_KEY or x_monitoring_key != settings.MONITORING_API_KEY:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
+@router.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
 @router.get("/strategies")
 async def list_strategies(
     db: AsyncSession = Depends(get_db),
     _: None = Depends(require_api_key),
 ):
     """
-    Retrieves a list of strategies from the database.
+    Retrieves a list of active strategies from the database.
     This endpoint demonstrates fetching data using the SQLAlchemy async session.
     """
     strategy_loader = StrategyLoader(db)
@@ -49,6 +53,8 @@ async def list_strategies(
 
 class StrategyTriggerLogCreate(BaseModel):
     strategy_id: uuid.UUID
+    name: str
+    status: Literal["TRIGGERED", "HELD", "FAILED"]
     snapshot: Dict[str, Any] = Field(default_factory=dict)
     message: Optional[str] = None
 
@@ -71,6 +77,10 @@ async def create_trigger_log(
     strategy.last_triggered_at = func.now()
     strategy.trigger_count += 1
     db.add(strategy) # Mark the strategy as modified
+
+    # Add name and status to snapshot
+    log_data.snapshot["strategy_name"] = log_data.name
+    log_data.snapshot["trigger_status"] = log_data.status
 
     new_log = StrategyTriggerLog(
         strategy_id=log_data.strategy_id,
@@ -130,6 +140,26 @@ async def metrics(
         "total_trigger_logs": t_count,
     }
 
+@router.get("/trigger_logs")
+async def get_trigger_logs(
+    db: AsyncSession = Depends(get_db),
+    _: None = Depends(require_api_key),
+):
+    """
+    Retrieves a list of all strategy trigger logs from the database.
+    """
+    result = await db.execute(select(StrategyTriggerLog))
+    trigger_logs = result.scalars().all()
+    return [
+        {
+            "id": log.id,
+            "strategy_id": log.strategy_id,
+            "timestamp": log.triggered_at,
+            "snapshot": log.snapshot,
+            "message": log.message,
+        }
+        for log in trigger_logs
+    ]
 
 
 class StrategyStatusUpdate(BaseModel):

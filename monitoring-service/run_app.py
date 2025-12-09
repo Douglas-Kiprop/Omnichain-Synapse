@@ -3,6 +3,7 @@ import asyncio
 import sys
 import uvicorn
 
+
 if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 

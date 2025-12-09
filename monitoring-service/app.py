@@ -40,13 +40,14 @@ async def on_startup():
     if settings.POSTGRES_URL:
         try:
             await test_db_connection(settings.POSTGRES_URL)
+            from db.session import AsyncSessionLocal
+            if settings.ENABLE_SCHEDULER:
+                app.state.scheduler = BatchedScheduler(AsyncSessionLocal)
+                await app.state.scheduler.start()
         except Exception as e:
             logging.error(f"Postgres connection failed: {e}")
     else:
         logging.warning("Skipping Postgres check: POSTGRES_URL not configured")
-    if settings.ENABLE_SCHEDULER:
-        app.state.scheduler = BatchedScheduler()
-        await app.state.scheduler.start()
 
 
 from cache.redis_client import close_redis_connection

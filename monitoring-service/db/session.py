@@ -20,6 +20,9 @@ async def test_db_connection(postgres_url: str) -> None:
             url = url.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
         elif url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+        
+
+
         engine = create_async_engine(url, pool_pre_ping=True)
         AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
         async with engine.connect() as connection:
