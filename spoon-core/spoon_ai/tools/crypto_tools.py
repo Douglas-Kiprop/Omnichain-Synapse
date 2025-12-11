@@ -9,8 +9,10 @@ import logging
 from typing import List, Optional
 from spoon_ai.tools.base import BaseTool
 from spoon_ai.tools.tool_manager import ToolManager
-from spoon_ai.tools.coingecko_tool import CoinGeckoTool
-from spoon_ai.tools.turf_tool import TurfTool
+
+# --- CRITICAL CHANGE 1: REMOVE COINGECKO, ADD COINMARKETCAP ---
+from spoon_ai.tools.coinmarketcap_tool import CoinMarketCapTool 
+# --- REMOVED: from spoon_ai.tools.coingecko_tool import CoinGeckoTool ---
 
 # Import the premium Chainbase tool
 from spoon_ai.tools.premium_chainbase_tool import PremiumChainbaseTool
@@ -29,13 +31,13 @@ def get_crypto_tools() -> List[BaseTool]:
     """
     crypto_tools = []
 
-    # Always add the CoinGeckoTool which is part of spoon-core
+    # --- CRITICAL CHANGE 2: Load the new CoinMarketCap Tool ---
     try:
-        coingecko_tool = CoinGeckoTool()
-        crypto_tools.append(coingecko_tool)
-        logger.info(f"✅ Loaded crypto tool: {coingecko_tool.name}")
+        cmc_tool = CoinMarketCapTool()
+        crypto_tools.append(cmc_tool)
+        logger.info(f"✅ Loaded crypto tool: {cmc_tool.name}")
     except Exception as e:
-        logger.warning(f"⚠️ Failed to load CoinGeckoTool: {e}")
+        logger.warning(f"⚠️ Failed to load CoinMarketCapTool: {e}")
 
     
     # Try to import tools from spoon-toolkits
@@ -50,11 +52,7 @@ def get_crypto_tools() -> List[BaseTool]:
             LendingRateMonitorTool,
         )
 
-        # Import additional crypto tools
-        from spoon_toolkits.crypto.predict_price import PredictPrice
-        from spoon_toolkits.crypto.token_holders import TokenHolders
-        from spoon_toolkits.crypto.wallet_analysis import WalletAnalysis
-        
+                
         # Instantiate crypto tools
         tool_classes = [
             Get24hStatsTool,
@@ -63,9 +61,7 @@ def get_crypto_tools() -> List[BaseTool]:
             LpRangeCheckTool,
             SuddenPriceIncreaseTool,
             LendingRateMonitorTool,
-            PredictPrice,
-            TokenHolders,  
-            WalletAnalysis,           
+                         
         ]
 
         for tool_class in tool_classes:
@@ -138,17 +134,15 @@ class CryptoToolsConfig:
 
     # Default tools to load (can be customized)
     DEFAULT_TOOLS = [
-        "coingecko_price",  # Updated to match CoinGeckoTool name
+        # --- CRITICAL CHANGE 3: Update tool name ---
+        "coinmarketcap_data",  
         "get_24h_stats",
         "get_kline_data",
         "price_threshold_alert",
         "lp_range_check",
         "monitor_sudden_price_increase",
         "lending_rate_monitor",
-        "crypto_market_monitor",
-        "predict_price",
-        "token_holders",  
-        "wallet_analysis",       
+        "crypto_market_monitor",              
         "crypto_powerdata_cex",
         "crypto_powerdata_dex",
         "crypto_powerdata_indicators",
@@ -156,22 +150,22 @@ class CryptoToolsConfig:
 
         # Premium Tools
         "premium_chainbase",
-        "premium_strategy_builder", # ✅ Added
+        "premium_strategy_builder", 
     ]
 
     # Tools that require special configuration
     TOOLS_REQUIRING_CONFIG = [
-        "lending_rate_monitor",  # May need API keys
-        "predict_price",         # Requires ML dependencies
-        "token_holders",         # Requires Bitquery API key
-        "wallet_analysis",
-        "crypto_powerdata_cex",  # May need API keys for private data
-        "crypto_powerdata_dex",  # Requires OKX API Key
-        "crypto_powerdata_price", # Requires OKX/CEX API Keys
+        "lending_rate_monitor",         
+        "crypto_powerdata_cex", 
+        "crypto_powerdata_dex", 
+        "crypto_powerdata_price",
 
         # Premium Tools
         "premium_chainbase",
-        "premium_strategy_builder", # ✅ Added
+        "premium_strategy_builder", 
+        
+        # --- CRITICAL CHANGE 4: Add CoinMarketCap key requirement ---
+        "coinmarketcap_data",
     ]
 
     @classmethod
