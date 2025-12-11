@@ -9,11 +9,14 @@ import logging
 from typing import List, Optional
 from spoon_ai.tools.base import BaseTool
 from spoon_ai.tools.tool_manager import ToolManager
-from spoon_ai.tools.coingecko_tool import CoinGeckoTool  # Import custom tool
-from spoon_ai.tools.turf_tool import TurfTool  # <-- ADD THIS IMPORT
+from spoon_ai.tools.coingecko_tool import CoinGeckoTool
+from spoon_ai.tools.turf_tool import TurfTool
 
-# New: Import the premium Chainbase tool
+# Import the premium Chainbase tool
 from spoon_ai.tools.premium_chainbase_tool import PremiumChainbaseTool
+
+# ✅ NEW: Import the Premium Strategy Builder
+from spoon_ai.tools.premium_strategy_builder import PremiumStrategyBuilderTool
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +42,6 @@ def get_crypto_tools() -> List[BaseTool]:
     try:
         # Import crypto tools from spoon-toolkit
         from spoon_toolkits.crypto import (
-            #GetTokenPriceTool,
             Get24hStatsTool,
             GetKlineDataTool,
             PriceThresholdAlertTool,
@@ -49,24 +51,21 @@ def get_crypto_tools() -> List[BaseTool]:
         )
 
         # Import additional crypto tools
-        # from spoon_toolkits.crypto.blockchain_monitor import CryptoMarketMonitor
         from spoon_toolkits.crypto.predict_price import PredictPrice
         from spoon_toolkits.crypto.token_holders import TokenHolders
         from spoon_toolkits.crypto.wallet_analysis import WalletAnalysis
         
         # Instantiate crypto tools
         tool_classes = [
-            #GetTokenPriceTool,
             Get24hStatsTool,
             GetKlineDataTool,
             PriceThresholdAlertTool,
             LpRangeCheckTool,
             SuddenPriceIncreaseTool,
             LendingRateMonitorTool,
-            # CryptoMarketMonitor,
             PredictPrice,
             TokenHolders,  
-            WalletAnalysis,          
+            WalletAnalysis,           
         ]
 
         for tool_class in tool_classes:
@@ -88,6 +87,14 @@ def get_crypto_tools() -> List[BaseTool]:
         logger.info(f"✅ Loaded premium crypto tool: {premium_chainbase_tool.name}")
     except Exception as e:
         logger.warning(f"⚠️ Failed to load PremiumChainbaseTool: {e}")
+
+    # ✅ PREMIUM: Load the Strategy Builder Tool
+    try:
+        strategy_builder = PremiumStrategyBuilderTool()
+        crypto_tools.append(strategy_builder)
+        logger.info(f"✅ Loaded premium crypto tool: {strategy_builder.name}")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to load PremiumStrategyBuilderTool: {e}")
 
     logger.info(f"🔧 Loaded {len(crypto_tools)} crypto tools successfully")
     return crypto_tools
@@ -131,7 +138,6 @@ class CryptoToolsConfig:
 
     # Default tools to load (can be customized)
     DEFAULT_TOOLS = [
-        #"get_token_price",
         "coingecko_price",  # Updated to match CoinGeckoTool name
         "get_24h_stats",
         "get_kline_data",
@@ -142,14 +148,15 @@ class CryptoToolsConfig:
         "crypto_market_monitor",
         "predict_price",
         "token_holders",  
-        "wallet_analysis",      
+        "wallet_analysis",       
         "crypto_powerdata_cex",
         "crypto_powerdata_dex",
         "crypto_powerdata_indicators",
         "crypto_powerdata_price",
 
-        # Premium Chainbase Tool
+        # Premium Tools
         "premium_chainbase",
+        "premium_strategy_builder", # ✅ Added
     ]
 
     # Tools that require special configuration
@@ -162,8 +169,9 @@ class CryptoToolsConfig:
         "crypto_powerdata_dex",  # Requires OKX API Key
         "crypto_powerdata_price", # Requires OKX/CEX API Keys
 
-        # Premium Chainbase Tool (requires payment + API key)
+        # Premium Tools
         "premium_chainbase",
+        "premium_strategy_builder", # ✅ Added
     ]
 
     @classmethod
