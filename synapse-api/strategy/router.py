@@ -1,12 +1,15 @@
+# synapse-api/strategy/router.py
+
 import logging
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from core.db import get_db
-from core.security import get_current_user
+# Import the new dependency alongside the original one
+from core.security import get_current_user, get_current_user_from_privy_token 
 from core.errors import NotFoundError
 from auth.models import UserProfile
 from .service import StrategyService
@@ -25,6 +28,30 @@ async def create_strategy(
     logger.info(f"Received strategy creation request for user {current_user.id}: {payload.json()}")
     svc = StrategyService(db)
     return await svc.create_strategy(current_user, payload)
+
+
+# --- NEW ENDPOINT FOR AGENT INTEGRATION ---
+@router.post(
+    "/strategies/agent", 
+    response_model=StrategyReadSchema, 
+    status_code=status.HTTP_201_CREATED,
+    summary="Agent Gateway: Create Strategy using Privy Token for Auth"
+)
+async def create_strategy_from_agent(
+    payload: StrategyCreateSchema,
+    db: AsyncSession = Depends(get_db),
+    # CRITICAL: Use the new dependency for Privy Token authentication
+    current_user: UserProfile = Depends(get_current_user_from_privy_token), 
+):
+    """
+    Creates a new trading strategy, authenticating the request using the 
+    raw Privy Token provided by the agent.
+    """
+    logger.info(f"Agent strategy creation (Privy Auth) for user {current_user.id}: {payload.name}")
+    svc = StrategyService(db)
+    # The StrategyService method signature is perfect for this:
+    return await svc.create_strategy(current_user, payload)
+# ------------------------------------------
 
 
 @router.get("/strategies", response_model=List[StrategyReadSchema])

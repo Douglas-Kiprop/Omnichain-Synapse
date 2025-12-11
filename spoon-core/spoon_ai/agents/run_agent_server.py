@@ -3,18 +3,24 @@ import asyncio
 import logging
 import uvicorn
 import traceback
-from typing import Optional 
+from typing import Optional, Any 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.middleware.cors import CORSMiddleware
+from contextvars import Token # Import Token for context management
 
 from spoon_ai.agents.omnichain_synapse_agent import OmnichainSynapseAgent
-# Import the context setter and the exception
+# Import the context setter and the exception for txn_hash
 from spoon_ai.x402.context import set_txn_hash, reset_txn_hash
 from spoon_ai.tools.premium_chainbase_tool import PaymentRequiredException
 # Import verification logic (moved from endpoint)
 from spoon_ai.x402.verifier import verify_payment
+
+# --- NEW IMPORTS for Authentication Context ---
+from spoon_ai.utils.auth import extract_privy_token # <--- Task 1.1: NEW UTILITY
+from spoon_ai.x402.context import tool_context # <--- Task 1.2: CONTEXT UTILITY (FIXED IMPORT)
+# ---------------------------------------------
 
 # Configure logging
 logging.basicConfig(
@@ -96,43 +102,58 @@ async def health_check():
     return {"status": "healthy"}
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat_with_agent(request: ChatRequest):
+async def chat_with_agent(
+    request: Request, # <-- Need to inject Request to read headers
+    chat_request: ChatRequest # <-- Rename to avoid conflict with `Request`
+):
     """
     Main chat endpoint. 
-    Sets the transaction context, runs the agent.
+    Sets the transaction context AND the user authentication context, runs the agent.
     If the agent hits a premium tool without valid payment, it bubbles PaymentRequiredException.
     """
     if not agent:
         raise HTTPException(status_code=500, detail="Agent not initialized")
     
-    # 1. SET CONTEXT: This makes txn_hash available to all tools deep in the stack
-    token = set_txn_hash(request.txn_hash)
+    # --- CONTEXT MANAGEMENT ---
+    
+    # 1. AUTH CONTEXT: Extract the user's Privy token from the header
+    privy_token = extract_privy_token(request)
+    
+    # 2. PAYMENT CONTEXT: Set the txn_hash context
+    txn_token: Token = set_txn_hash(chat_request.txn_hash)
+    
+    # 3. COMBINED CONTEXT: Manually manage the tool_context for the Privy Token
+    # We use a combined dictionary to hold both context pieces for the run
+    current_context = tool_context.get()
+    
+    if privy_token:
+        current_context["privy_token"] = privy_token
+        logger.info("🔑 Injected Privy Token into Agent context for authentication.")
+    
+    context_token: Token = tool_context.set(current_context)
     
     try:
-        if request.txn_hash:
-            logger.info(f"💳 Context set with hash: {request.txn_hash}")
+        if chat_request.txn_hash:
+            logger.info(f"💳 Context set with hash: {chat_request.txn_hash}")
         
-        # 2. RUN AGENT: This line will raise PaymentRequiredException if payment fails.
-        response = await agent.process(input_text=request.message)
+        # 4. RUN AGENT: This line will use the context variables
+        response = await agent.process(input_text=chat_request.message)
         
         return ChatResponse(response=response)
         
     except PaymentRequiredException:
-        # 🛑 IMPORTANT: Do NOT catch and re-raise other exceptions here. 
-        # The generic 'except Exception' below will catch everything else.
-        # This explicit catch is just to ensure we log that it happened, 
-        # but we MUST re-raise it so the @app.exception_handler can catch it.
+        # Re-raise it so the @app.exception_handler can catch it for 402 response
         raise 
 
     except Exception as e:
-        # This catches all other exceptions (e.g., LLM errors, network failures, etc.)
         logger.error(f"❌ Error processing request: {e}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
         
     finally:
-        # 3. CLEANUP: Always reset context to prevent leaks between requests
-        reset_txn_hash(token)
+        # 5. CLEANUP: Always reset ALL contexts to prevent leaks between requests
+        reset_txn_hash(txn_token)
+        tool_context.reset(context_token) # Reset the combined context
 
 @app.post("/verify-payment")
 async def verify_payment_endpoint(txn_hash: str):

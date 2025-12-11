@@ -164,3 +164,10 @@ To ensure a smooth and secure development process, adhere to the following phase
 
 5.  **Continuous Testing (Phase 7):**
     *   Integrate unit and integration tests from the very beginning. Don't wait until the end. This will catch issues early and ensure stability.
+
+    
+
+    Phase,Goal
+Phase 1: Spoon-Core Injection,Update the POST /chat handler in spoon-core to extract the user's Privy Token and inject it into the tool execution context.
+Phase 2: Synapse-API Gateway,"Create a dedicated ""Privy-Authenticated"" endpoint in synapse-api/strategy/router.py that accepts the Privy Token and performs the necessary conversion/user lookup."
+Phase 3: Tool Update,Update premium_strategy_builder.py to retrieve the Privy Token from the context and send it to the new Synapse API endpoint.
