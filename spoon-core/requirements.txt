@@ -139,3 +139,6 @@ fastmcp==2.11.3
 spoon-toolkits>=0.1.0
 # Remove chromadb as it's optional and we are prioritizing Qdrant
 # chromadb # Removed
+
+# New: x402 deps
+

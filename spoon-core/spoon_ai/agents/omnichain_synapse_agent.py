@@ -1,13 +1,13 @@
 import os
 from dotenv import load_dotenv
-from spoon_ai.agents.spoon_react import SpoonReactAI # Changed from BaseAgent
-from spoon_ai.tools.chainbase_tool import ChainbaseTool
+from spoon_ai.agents.spoon_react import SpoonReactAI  # Changed from BaseAgent
 from spoon_ai.tools.coingecko_tool import CoinGeckoTool
-from spoon_ai.chat import ChatBot # Import ChatBot instead of GeminiLLM
+from spoon_ai.chat import ChatBot  # Import ChatBot instead of GeminiLLM
 from typing import Optional
 import asyncio
 import logging
-from spoon_ai.tools.crypto_tools import get_crypto_tools # New import
+from spoon_ai.tools.crypto_tools import get_crypto_tools  # New import
+
 
 # Set up logging for detailed debugging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -24,10 +24,13 @@ class OmnichainSynapseAgent(SpoonReactAI):
     """
     def __init__(self, name: str = "OmnichainSynapseAgent", llm: Optional[ChatBot] = None, **kwargs):
         # Use ChatBot directly, it will pick up config from environment/config.json
-        llm = llm if llm else ChatBot() # Changed to ChatBot
+        llm = llm if llm else ChatBot()  # Changed to ChatBot
         
         # Initialize SpoonReactAI with the LLM and register tools via its tool manager
         super().__init__(name=name, llm=llm, **kwargs)
+        
+        # New: For x402 premium tool verification (does not affect original init)
+        self.current_txn_hash: Optional[str] = None
         
         # Register tools with SpoonReactAI's tool manager
         try:
@@ -39,12 +42,14 @@ class OmnichainSynapseAgent(SpoonReactAI):
             logger.error(f"Failed to initialize crypto tools: %s", e)
             raise
 
-    async def process(self, input_text: str) -> str:
+    async def process(self, input_text: str, txn_hash: Optional[str] = None) -> str:
         """
         Processes the user's input, reasons, makes tool calls, and generates a response.
         This method now primarily relies on SpoonReactAI's internal ReAct loop.
         """
         logger.debug(f"OmnichainSynapseAgent received input: {input_text}")
+        # New: Set txn_hash for premium verification (does not affect original process)
+        self.current_txn_hash = txn_hash
         try:
             # Delegate the processing to the SpoonReactAI's run method.
             # This will engage the ReAct loop, which uses the LLM to reason,
@@ -55,6 +60,9 @@ class OmnichainSynapseAgent(SpoonReactAI):
         except Exception as e:
             logger.error(f"Error during SpoonReactAI processing: {e}")
             return f"An error occurred while processing your request: {str(e)}"
+        finally:
+            # New: Clean up txn_hash after processing
+            self.current_txn_hash = None
 
 # Example Usage
 if __name__ == "__main__":

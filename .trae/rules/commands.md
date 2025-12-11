@@ -10,6 +10,8 @@ python "spoon_ai\agents\run_omnichain_mcp_server.py"
 
 python "spoon_ai\agents\run_agent_server.py"
 
+python -m spoon_ai.agents.run_agent_server
+
 pytest tests\test_strategy_manager.py
 
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant

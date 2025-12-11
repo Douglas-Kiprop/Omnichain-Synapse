@@ -25,3 +25,9 @@ SECRET_KEY = "spoon-ai-secret-key"
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# New: x402 config
+AVALANCHE_RPC = "https://api.avax-test.network/ext/bc/C/rpc"
+TREASURY_ADDRESS = os.getenv("TREASURY_ADDRESS", "0x636b2b787b6564018d9d9d84272838185d8254b4")  # Add to .env
+TREASURY_ADDRESS = "0x636b2b787b6564018d9d9d84272838185d8254b4"  # Your wallet or contract
+PREMIUM_TOOL_FEE_WEI = int(0.0005 * 1e18)  # 0.0005 AVAX in wei

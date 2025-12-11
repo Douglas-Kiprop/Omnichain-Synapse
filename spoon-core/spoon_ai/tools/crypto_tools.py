@@ -10,6 +10,10 @@ from typing import List, Optional
 from spoon_ai.tools.base import BaseTool
 from spoon_ai.tools.tool_manager import ToolManager
 from spoon_ai.tools.coingecko_tool import CoinGeckoTool  # Import custom tool
+from spoon_ai.tools.turf_tool import TurfTool  # <-- ADD THIS IMPORT
+
+# New: Import the premium Chainbase tool
+from spoon_ai.tools.premium_chainbase_tool import PremiumChainbaseTool
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +34,7 @@ def get_crypto_tools() -> List[BaseTool]:
     except Exception as e:
         logger.warning(f"⚠️ Failed to load CoinGeckoTool: {e}")
 
+    
     # Try to import tools from spoon-toolkits
     try:
         # Import crypto tools from spoon-toolkit
@@ -76,45 +81,13 @@ def get_crypto_tools() -> List[BaseTool]:
     except ImportError as e:
         logger.warning(f"⚠️ Failed to import crypto tools from spoon-toolkit.crypto: {e}")
     
-    # Try to import chainbase tools separately
+    # PREMIUM: Load the premium Chainbase tool
     try:
-        # Import Chainbase tools from chainbase_tools.py
-        from spoon_toolkits.chainbase.chainbase_tools import (
-            GetLatestBlockNumberTool,
-            GetBlockByNumberTool,
-            GetTransactionByHashTool,
-            GetAccountTransactionsTool,
-            ContractCallTool,
-            GetAccountTokensTool,
-            GetAccountNFTsTool, 
-            GetAccountBalanceTool,
-            GetTokenMetadataTool,
-        )
-        
-        # Chainbase Tools
-        chainbase_tool_classes = [
-            GetLatestBlockNumberTool,
-            GetBlockByNumberTool,
-            GetTransactionByHashTool,
-            GetAccountTransactionsTool,
-            ContractCallTool,
-            GetAccountTokensTool,
-            GetAccountNFTsTool, 
-            GetAccountBalanceTool,
-            GetTokenMetadataTool,
-        ]
-        
-        for tool_class in chainbase_tool_classes:
-            try:
-                logger.info(f"Attempting to load chainbase tool: {tool_class.__name__}")
-                tool_instance = tool_class()
-                crypto_tools.append(tool_instance)
-                logger.info(f"✅ Loaded chainbase tool: {tool_instance.name}")
-            except Exception as e:
-                logger.warning(f"⚠️ Failed to load chainbase tool {tool_class.__name__}: {e}")
-                
-    except ImportError as e:
-        logger.warning(f"⚠️ Failed to import chainbase tools from spoon-toolkit.chainbase: {e}")
+        premium_chainbase_tool = PremiumChainbaseTool()
+        crypto_tools.append(premium_chainbase_tool)
+        logger.info(f"✅ Loaded premium crypto tool: {premium_chainbase_tool.name}")
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to load PremiumChainbaseTool: {e}")
 
     logger.info(f"🔧 Loaded {len(crypto_tools)} crypto tools successfully")
     return crypto_tools
@@ -175,16 +148,8 @@ class CryptoToolsConfig:
         "crypto_powerdata_indicators",
         "crypto_powerdata_price",
 
-        # Chainbase Tools (from chainbase_tools.py)
-        "get_latest_block_number",
-        "get_block_by_number",
-        "get_transaction_by_hash",
-        "get_transactions_by_account",
-        "contract_call",
-        "get_account_tokens",
-        "get_account_nfts", 
-        "get_account_balance",
-        "get_token_metadata",
+        # Premium Chainbase Tool
+        "premium_chainbase",
     ]
 
     # Tools that require special configuration
@@ -197,16 +162,8 @@ class CryptoToolsConfig:
         "crypto_powerdata_dex",  # Requires OKX API Key
         "crypto_powerdata_price", # Requires OKX/CEX API Keys
 
-        # Chainbase Tools (from chainbase_tools.py)
-        "get_latest_block_number",
-        "get_block_by_number",
-        "get_transaction_by_hash",
-        "get_transactions_by_account",
-        "contract_call",
-        "get_account_tokens",
-        "get_account_nfts", 
-        "get_account_balance",
-        "get_token_metadata",
+        # Premium Chainbase Tool (requires payment + API key)
+        "premium_chainbase",
     ]
 
     @classmethod

@@ -17,6 +17,11 @@ from spoon_ai.tools import ToolManager
 from mcp.types import Tool as MCPTool
 from spoon_ai.tools.mcp_tool import MCPTool as SpoonMCPTool
 
+# New: Imports for x402 premium check
+from fastapi import HTTPException
+from spoon_ai.utils.config import TREASURY_ADDRESS, PREMIUM_TOOL_FEE_WEI
+from spoon_ai.x402.verifier import verify_payment
+
 logging.getLogger("spoon_ai").setLevel(logging.INFO)
 
 logger = getLogger("spoon_ai")
@@ -257,6 +262,22 @@ class ToolCallAgent(ReActAgent):
         name = tool_call.function.name
         if name not in self.avaliable_tools.tool_map:
             return f"Error: Tool {name} not found"
+
+        # New: Premium tool check using self.current_txn_hash
+        if name.startswith("premium_"):
+            txn_hash = self.current_txn_hash
+            if not txn_hash or not verify_payment(txn_hash):
+                raise HTTPException(
+                    status_code=402,
+                    detail={
+                        "error": "Payment required",
+                        "payment": {
+                            "amount": str(PREMIUM_TOOL_FEE_WEI),
+                            "recipient": TREASURY_ADDRESS,
+                            "description": f"Access {name}"
+                        }
+                    }
+                )
 
         try:
             args = parse_tool_arguments(tool_call.function.arguments)
