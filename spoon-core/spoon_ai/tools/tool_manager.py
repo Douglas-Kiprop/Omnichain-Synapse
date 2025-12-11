@@ -1,4 +1,5 @@
 import os
+import logging
 from typing import Any, Dict, Iterator, List
 
 from openai import OpenAI
@@ -6,6 +7,8 @@ import pinecone
 
 from spoon_ai.tools.base import BaseTool, ToolFailure, ToolResult
 
+
+logger = logging.getLogger(__name__)
 
 class ToolManager:
     def __init__(self, tools: List[BaseTool]):
@@ -41,15 +44,23 @@ class ToolManager:
     def to_params(self) -> List[Dict[str, Any]]:
         return [tool.to_param() for tool in self.tools]
     
-    async def execute(self, * ,name: str, tool_input: Dict[str, Any] =None) -> ToolResult:
+    async def execute(self, *, name: str, tool_input: Dict[str, Any] = None) -> ToolResult:
         tool = self.tool_map[name]
         if not tool:
             return ToolFailure(error=f"Tool {name} not found")
-    
+
         try:
+            # Execute the tool with input arguments
             result = await tool(**tool_input)
             return result
         except Exception as e:
+            # 🛑 CRITICAL FIX: Check the exception type by name and re-raise.
+            # This ensures the 402 handler in FastAPI gets triggered.
+            if type(e).__name__ == "PaymentRequiredException":
+                logger.info("💰 PaymentRequiredException intercepted in ToolManager. Re-raising to trigger 402 handler.")
+                raise e
+            
+            # For all other exceptions, return as a ToolFailure for the LLM to process.
             return ToolFailure(error=str(e))
         
     def get_tool(self, name: str) -> BaseTool:
