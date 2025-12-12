@@ -2,6 +2,7 @@
 import os
 import requests
 import logging
+import re # <-- New import for regex
 from typing import Optional, Dict, Any
 from pydantic import Field, PrivateAttr
 
@@ -14,6 +15,7 @@ from spoon_ai.utils.config import TREASURY_ADDRESS, PREMIUM_TOOL_FEE_WEI
 logger = logging.getLogger(__name__)
 
 class PaymentRequiredException(Exception):
+    # ... (Keep PaymentRequiredException class as is) ...
     """
     Raised when a tool requires payment but a valid transaction hash is missing.
     The Server catches this and converts it to a 402 HTTP response.
@@ -39,7 +41,7 @@ class PremiumChainbaseTool(BaseTool):
             "properties": {
                 "wallet_address": {
                     "type": "string",
-                    "description": "The wallet address to query"
+                    "description": "The EVM wallet address to query (must be 42 characters, starting with 0x)." # <-- Improved description
                 },
                 "chain_id": {
                     "type": "integer",
@@ -60,17 +62,18 @@ class PremiumChainbaseTool(BaseTool):
 
     _api_key: str = PrivateAttr()
     _base_url: str = PrivateAttr()
+    # Regex for a basic check on EVM addresses (40 hex chars + 0x)
+    _ADDRESS_REGEX = re.compile(r"^0x[a-fA-F0-9]{40}$") 
 
     def __init__(self):
         super().__init__()
         self._api_key = os.getenv("CHAINBASE_API_KEY")
         if not self._api_key:
-            # It's better to log a warning than crash if not using the tool, 
-            # but for premium tools strictly requiring it, raising is fine.
             logger.warning("CHAINBASE_API_KEY not found in .env")
         self._base_url = "https://api.chainbase.online/v1/"
 
     def _make_request(self, endpoint: str, params: dict = None) -> dict:
+        # ... (Keep _make_request as is) ...
         if not self._api_key:
             return {"error": "Server configuration error: Missing API Key"}
             
@@ -89,11 +92,21 @@ class PremiumChainbaseTool(BaseTool):
         wallet_address: str, 
         chain_id: int = 1, 
         query_type: str = "balances",
-        **kwargs # Catch generic kwargs
+        **kwargs
     ) -> str:
         """
         Executes the tool with implicit payment verification from context.
         """
+        # --- NEW: INPUT VALIDATION CHECK ---
+        if not self._ADDRESS_REGEX.match(wallet_address):
+            error_msg = (
+                f"Invalid wallet address format: '{wallet_address}'. "
+                "EVM addresses must be 42 characters long and start with '0x'."
+            )
+            logger.error(f"[PremiumChainbaseTool] Validation Error: {error_msg}")
+            return error_msg
+        # --- END NEW: INPUT VALIDATION CHECK ---
+        
         # 1. RETRIEVE HASH FROM CONTEXT (Thread-safe)
         txn_hash = get_txn_hash()
         
