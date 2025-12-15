@@ -43,8 +43,8 @@ async def test_db_connection(postgres_url: str) -> None:
                 "prepare_threshold": None  # Disables prepared statements (solves psycopg.errors.InvalidSqlStatementName)
             }
         )
-        # --- END OF FIXES ---
-        
+        # --- END OF FIXES  ---
+        # Testing new deployment
         AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
         
         # Test connection
