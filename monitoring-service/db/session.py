@@ -1,6 +1,9 @@
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import text
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 engine = None
@@ -20,16 +23,20 @@ async def test_db_connection(postgres_url: str) -> None:
     The engine configuration includes fixes for the 'prepared statement does not exist' error.
     """
     global engine, AsyncSessionLocal
+    logger.debug(f"Attempting to connect to PostgreSQL with URL: {postgres_url}")
     try:
         url = postgres_url
         
         # Standardize URL for use with psycopg (async driver)
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql+psycopg://", 1)
+            logger.debug(f"Standardized URL (postgres://): {url}")
         elif url.startswith("postgresql+asyncpg://"):
             url = url.replace("postgresql+asyncpg://", "postgresql+psycopg://", 1)
+            logger.debug(f"Standardized URL (postgresql+asyncpg://): {url}")
         elif url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+            logger.debug(f"Standardized URL (postgresql://): {url}")
         
         # --- FIXES FOR InvalidSqlStatementName ARE APPLIED HERE ---
         # 1. pool_recycle: Ensures connections are recycled periodically.
@@ -43,15 +50,19 @@ async def test_db_connection(postgres_url: str) -> None:
                 "prepare_threshold": None  # Disables prepared statements (solves psycopg.errors.InvalidSqlStatementName)
             }
         )
+        logger.debug("SQLAlchemy engine created. Attempting to create sessionmaker.")
         # --- END OF FIXES  ---
         # Testing new deployment
         AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
         
         # Test connection
+        logger.debug("Attempting to connect to the database and execute a test query.")
         async with engine.connect() as connection:
             await connection.execute(text("SELECT 1"))
+            logger.info("PostgreSQL connection successful.")
             
     except Exception as e:
+        logger.error(f"Postgres connection failed: {str(e)}", exc_info=True)
         raise RuntimeError(f"Postgres connection failed: {str(e)}") from e
 
 async def close_db_connection() -> None:
